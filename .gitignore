@@ -1,0 +1,9 @@
+.env
+.env.*
+# 카카오 JavaScript 키가 들어가는 파일 (로컬: 직접 만듦 / 배포: scripts/make-config.mjs가 생성). 저장소에 올리지 않는다.
+config.js
+# Claude Code 로컬 설정
+.claude/
+# 용량이 큰 원본 데이터와 OSM 캐시 (scripts/build-risk.mjs로 다시 만들 수 있음)
+data/*_changwon.csv
+data/osm_roads_knu.json
