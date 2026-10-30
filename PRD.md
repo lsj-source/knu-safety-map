@@ -10,7 +10,7 @@
 |---|---|
 | **배포 주소** | **`https://______________.vercel.app`** ← 배포 후 기재 |
 | 배포 플랫폼 | Vercel (GitHub 저장소 연동 자동 배포) |
-| GitHub 저장소 | `https://github.com/______/knu-safety-map` (공개) ← 저장소 생성 후 기재 |
+| GitHub 저장소 | [`https://github.com/lsj-source/knu-safety-map`](https://github.com/lsj-source/knu-safety-map) (공개) |
 | 이번 주 배포일 | 2026-10-30 (배포 완료 후 확인) |
 | 이번 주 배포 버전 | 지도 + 도로 구간 점수 색칠 + 길을 누르면 보안등·CCTV 표시 (정적 배포) |
 | 다음 주 갱신 | 같은 주소에 재배포 (11.6) |
@@ -54,13 +54,12 @@
 | 데이터 점검 | 원본 점 데이터, 도로, 점-도로 연결, 경로용 도로망 21개 항목 점검 → 문제 0건 | `scripts/audit-data.mjs` |
 | 경로 탐색 선행 작업 | 경로용 도로망(`graph.json`)과 최단/안전 경로 시험 스크립트 | `data/graph.json`, `scripts/probe-routes.mjs` |
 | 키 분리 | 카카오 JavaScript 키를 저장소에서 빼고 `config.js`(로컬) / 환경 변수(배포)로 주입 | `config.example.js`, `scripts/make-config.mjs`, `vercel.json` |
-| 새 저장소 | 게임과 분리한 새 git 저장소(로컬 커밋 완료, 키 없음 확인) | 이 저장소 |
+| 새 저장소 | 게임과 분리한 새 git 저장소를 GitHub(공개)에 업로드. 원격에서 키 0건, `config.js`·원본 CSV 미포함 확인 | https://github.com/lsj-source/knu-safety-map |
 
 ### 진행 중 · 대기
 
 | 항목 | 상태 | 남은 일 |
 |---|---|---|
-| GitHub 업로드 | 대기 | GitHub에서 빈 저장소 `knu-safety-map` 생성 → 푸시 → 0번 표에 주소 기재 |
 | 카카오 도메인 등록 | 대기 | 배포 주소를 카카오 콘솔 JavaScript SDK 도메인에 등록 (안 하면 배포본에서 지도가 안 뜸) |
 | 정적 배포 (오늘) | 미착수 | Vercel Import, 환경 변수 `KAKAO_JS_KEY` 추가, 휴대폰 확인 → **0번 표에 주소 기재** |
 | 완료 기준 점검 | 미착수 | 6번 완료 기준을 배포 주소에서 점검하고 `docs/poc.md`에 기록 |
