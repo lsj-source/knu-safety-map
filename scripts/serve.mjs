@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.argv[2]) || 5173;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.geojson': 'application/json', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
-const PUBLIC = new Set(['index.html', 'config.js', 'data/risk_segments.geojson', 'data/points.json', 'data/graph.json']); // 원본 CSV와 .env는 제공하지 않음
+const PUBLIC = new Set(['index.html', 'config.js', 'route.js', 'data/risk_segments.geojson', 'data/points.json', 'data/graph.json']); // 원본 CSV와 .env는 제공하지 않음
 
 http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/+/, '') || 'index.html';

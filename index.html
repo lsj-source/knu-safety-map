@@ -34,7 +34,6 @@
   .detail-score { font-size: 26px; font-weight: 700; }
   .meter { height: 8px; border-radius: 4px; background: #eceff4; overflow: hidden; margin: 2px 0 6px; }
   .meter > i { display: block; height: 100%; }
-  #detail:empty::before { content: "지도에서 도로 구간을 눌러 점수 근거를 확인하세요. 그 구간에 반영된 보안등·CCTV 위치도 지도에 나타납니다."; color: var(--muted); }
   /* 선택한 구간의 근거 점은 눈에 띄게 크게 */
   .mk-light.ev { width: 14px; height: 14px; border: 2px solid #1f2937; background: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.95), 0 1px 4px rgba(0,0,0,.5); opacity: 1; }
   .mk-cctv.ev { width: 15px; height: 15px; box-shadow: 0 0 0 1px #0f172a, 0 1px 4px rgba(0,0,0,.5); }
@@ -47,14 +46,49 @@
   .mk-light.big { width: calc(var(--ls) + 3px); height: calc(var(--ls) + 3px); }
   .mk-cctv { width: 11px; height: 11px; border-radius: 2px; background: #0f172a; border: 2px solid #fff; box-shadow: 0 0 0 1px #0f172a; cursor: pointer; }
   .mk-cctv2 { width: 11px; height: 11px; border-radius: 2px; background: #cbd5e1; border: 2px solid #475569; cursor: pointer; }
+  /* 길을 눌렀을 때 함께 보이는 "근처 점": 점수에 반영된 점(진한 모양)과 구분되게 속이 빈 모양 */
+  .mk-light.near { width: 12px; height: 12px; background: transparent; border: 2px dashed #64748b; box-shadow: none; opacity: 1; }
+  .mk-cctv.near { width: 13px; height: 13px; border-radius: 2px; background: #fff; border: 2px solid #475569; box-shadow: none; }
+  .mk-cctv.near.other { background: #e2e8f0; border: 2px dashed #94a3b8; }
+  .btn { font: inherit; font-size: 13px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); cursor: pointer; margin: 6px 0 2px; }
+  .btn:hover { border-color: var(--accent); }
+  /* 두 길 비교: 출발·도착 표시, 비교 표 */
+  .mk-pt { width: 12px; height: 12px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1.5px #111827, 0 1px 4px rgba(0,0,0,.5); pointer-events: none; }
+  .mk-pt.s { background: #111827; } .mk-pt.e { background: #fff; }
+  .mk-pin { font: 700 12px sans-serif; padding: 3px 9px; border-radius: 12px; white-space: nowrap; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); pointer-events: none; transform: translateY(-16px); }
+  .mk-pin.s { background: #111827; } .mk-pin.e { background: #1d4ed8; }
+  .legend-row svg { flex: none; }
+  .rp-row { display: flex; flex-wrap: wrap; gap: 0 16px; }
+  .mk-arrow { width: 18px; height: 18px; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
+  #cmp-msg { font-size: 13px; margin: 6px 0; }
+  #cmp-msg.err { color: #b42318; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
+  table.cmp th, table.cmp td { padding: 4px 0; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
+  table.cmp th:first-child, table.cmp td:first-child { text-align: left; color: var(--muted); font-weight: 400; }
+  table.cmp td.best { font-weight: 700; color: #0b7a3b; }
+  .warn { font-size: 12.5px; background: #fff7e6; color: #7a4b00; border: 1px solid #f3d9a4; border-radius: 6px; padding: 6px 8px; margin: 6px 0; }
+  @media (prefers-color-scheme: dark) { .warn { background: #3a2f12; color: #f3d9a4; border-color: #5a4a1f; } table.cmp td.best { color: #4ade80; } }
   .mk-acc { width: 30px; height: 30px; border-radius: 50%; background: #e6007e; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.55); color: #fff; font: 800 18px/24px sans-serif; text-align: center; cursor: pointer; }
   .mk-campus { background: #1d4ed8; color: #fff; font: 600 12px sans-serif; padding: 3px 8px; border-radius: 12px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,.4); pointer-events: none; }
   .iw { padding: 8px 12px; font-size: 13px; line-height: 1.5; color: #1f2430; width: 290px; white-space: normal; overflow-wrap: anywhere; box-sizing: content-box; }
   .iw .sub { color: #646b7a; }
+  /* 휴대폰: 지도를 위에 크게, 패널은 아래에서 스크롤. 손가락으로 누르기 쉽게 버튼·체크박스를 키움 */
   @media (max-width: 720px) {
+    html, body { height: 100vh; height: 100dvh; }
+    header { padding: 6px 12px; gap: 2px 8px; }
+    header h1 { font-size: 15px; }
+    header span { font-size: 11.5px; }
     main { flex-direction: column; }
-    aside { width: 100%; max-width: none; border-left: 0; border-top: 1px solid var(--line); max-height: 46vh; }
+    #map { flex: 1 1 0; min-height: 200px; }
+    aside { flex: 0 0 auto; width: 100%; max-width: none; height: 42vh; height: 42dvh; border-left: 0; border-top: 1px solid var(--line); padding: 12px 14px 28px; font-size: 14px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    .btn { min-height: 44px; padding: 8px 16px; font-size: 14.5px; }
+    label.row { padding: 9px 0; }
+    label.row input[type=checkbox] { width: 20px; height: 20px; flex: none; }
+    table.cmp, table.w { font-size: 13px; }
+    table.cmp th, table.cmp td { padding: 6px 0; }
+    .iw { width: 240px; }
   }
+  @media (pointer: coarse) { .mk-light { pointer-events: none; } .mk-cctv, .mk-cctv2 { min-width: 14px; min-height: 14px; } }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #151821; --fg: #e6e8ee; --muted: #9aa1b2; --line: #2b3040; }
     .meter { background: #2b3040; }
@@ -64,13 +98,53 @@
 <body>
 <header>
   <h1>경남대 주변 보행 안전 지도</h1>
-  <span>구간별 "야간 주의" 점수 · 환경 기반 지표(프로토타입)</span>
+  <span>구간별 "보행 주의" 점수 · 환경 기반 지표(프로토타입)</span>
 </header>
 <main>
   <div id="map" aria-label="경남대학교 주변 보행 안전 지도"><div id="map-error"></div></div>
   <aside>
-    <h2>선택한 구간</h2>
-    <div id="detail"></div>
+    <!-- 패널 2: 두 길 비교 (길 비교를 시작하면 이것만 보인다) -->
+    <div id="panel-route" hidden>
+      <button type="button" class="btn" id="btn-cmp-end" style="margin-top:0">← 지도 보기로 돌아가기</button>
+      <h2>두 길 비교</h2>
+      <div id="cmp-msg"></div>
+      <button type="button" class="btn" id="btn-redo" style="margin-top:0" hidden>다시 고르기</button>
+      <div id="route-pts" hidden>
+        <div class="note" style="margin:0">경로 주변 점 표시</div>
+        <div class="rp-row">
+          <label class="row"><input type="checkbox" id="rp-all" checked> <b>전체</b></label>
+          <label class="row"><input type="checkbox" id="rp-light" checked> <span class="dot" style="width:11px;height:11px;background:#fff;border:2px solid #1f2937"></span> 보안등</label>
+          <label class="row"><input type="checkbox" id="rp-cctv" checked> <span class="dot" style="width:12px;height:12px;border-radius:2px;background:#0f172a;border:2px solid #fff;box-shadow:0 0 0 1px #0f172a"></span> CCTV</label>
+        </div>
+      </div>
+      <div id="cmp"></div>
+    </div>
+
+    <!-- 패널 3: 도로 구간을 눌렀을 때 (구간 점수 근거와 근거 점 설정) -->
+    <div id="panel-seg" hidden>
+      <button type="button" class="btn" id="btn-seg-back" style="margin-top:0">← 전체 보기로 돌아가기</button>
+      <h2>선택한 구간</h2>
+      <div id="detail"></div>
+
+      <h2>점수 계산 (가중치)</h2>
+      <table class="w" id="weights-seg"></table>
+      <p class="note">점수 = 항목별 주의도(0~1)의 가중 평균 × 100. 위 막대는 이 구간의 항목별 주의도이고, 높을수록 걸을 때 더 주의가 필요한 환경이라는 뜻입니다. 범죄나 사고 발생을 단정하지 않습니다.</p>
+
+      <h2>지도에 보이는 점</h2>
+      <div class="legend-row"><span class="dot" style="width:11px;height:11px;border-radius:2px;background:#0f172a;border:2px solid #fff;box-shadow:0 0 0 1px #0f172a"></span> 진한 모양 = 이 도로에 반영된 점 (점수에 쓰임)</div>
+      <div class="legend-row"><span class="dot" style="width:11px;height:11px;border-radius:2px;background:#fff;border:2px solid #475569"></span> 속 빈 모양 = 근처 점 (다른 도로 소속, <b>점수에 안 쓰임</b>)</div>
+      <label class="row"><input type="checkbox" id="o-near" checked> 근처 CCTV·보안등도 함께 보기</label>
+      <button type="button" class="btn" id="btn-ev">근거 점 숨기기</button>
+    </div>
+
+    <!-- 패널 1: 기본 (전체 보기: 비교 시작, 레이어, 범례, 계산식, 출처) -->
+    <div id="panel-main">
+    <h2>두 길 비교</h2>
+    <p class="note" style="margin:0 0 4px">출발지와 도착지를 골라 최단 경로와 보행 주의 점수가 더 낮은 경로를 비교합니다.</p>
+    <button type="button" class="btn" id="btn-cmp" style="margin-top:0">두 길 비교 시작</button>
+
+    <h2>도로 구간 점수 근거</h2>
+    <p class="note" style="margin:0">지도에서 도로 구간을 누르면 점수 근거와 그 구간에 반영된 보안등·CCTV 위치가 나타납니다.</p>
 
     <h2>표시할 레이어</h2>
     <label class="row"><input type="checkbox" id="l-seg" checked> 도로 구간 점수</label>
@@ -78,9 +152,9 @@
     <label class="row"><input type="checkbox" id="l-cctv" checked> <span class="dot" style="width:12px;height:12px;border-radius:2px;background:#0f172a;border:2px solid #fff;box-shadow:0 0 0 1px #0f172a"></span> CCTV(방범·어린이보호) <span class="soon" id="n-cctv"></span></label>
     <label class="row"><input type="checkbox" id="l-cctv2"> <span class="dot" style="width:12px;height:12px;border-radius:2px;background:#cbd5e1;border:2px solid #475569"></span> CCTV(그 외, 점수 제외) <span class="soon" id="n-cctv2"></span></label>
     <label class="row"><input type="checkbox" id="l-acc"> <span class="dot" style="width:16px;height:16px;background:#e6007e;border:2px solid #fff;box-shadow:0 0 0 1px #e6007e;color:#fff;font:800 11px/12px sans-serif;text-align:center">!</span> 사고다발지 <span class="soon" id="n-acc"></span></label>
-    <p class="note">보안등·CCTV·사고다발지는 처음에는 숨겨져 있습니다. 도로 구간을 누르면 그 구간 점수에 쓰인 점만 지도에 나타납니다. 위 체크박스를 켜면 전체를 볼 수 있습니다.</p>
+    <p class="note">보안등·CCTV·사고다발지는 처음에는 숨겨져 있습니다. 도로 구간을 누르면 그 구간 점수에 쓰인 점이 지도에 나타납니다. 위 체크박스를 켜면 전체를 볼 수 있습니다.</p>
 
-    <h2>야간 주의 점수</h2>
+    <h2>보행 주의 점수</h2>
     <div class="legend-row"><span class="bar" style="background:var(--s1)"></span> 0–19 낮음</div>
     <div class="legend-row"><span class="bar" style="background:var(--s2)"></span> 20–39</div>
     <div class="legend-row"><span class="bar" style="background:var(--s3)"></span> 40–59</div>
@@ -89,11 +163,12 @@
 
     <h2>점수 계산 (가중치)</h2>
     <table class="w" id="weights"></table>
-    <p class="note">점수 = 항목별 주의도(0~1)의 가중 평균 × 100. 높을수록 야간에 더 주의가 필요한 환경이라는 뜻이며, 범죄나 사고 발생을 단정하지 않습니다.</p>
+    <p class="note">점수 = 항목별 주의도(0~1)의 가중 평균 × 100. 높을수록 걸을 때 더 주의가 필요한 환경(보안등·CCTV 부족, 사고다발지 근접 등)이라는 뜻이며, 범죄나 사고 발생을 단정하지 않습니다.</p>
 
     <h2>데이터와 한계</h2>
     <p class="note" id="sources"></p>
     <p class="note">보안등 정보에는 밝기·고장 여부가 없고, CCTV는 공개된 일부만 포함됩니다. 사고다발지는 2012~2020년 자료라 최신 상황과 다를 수 있습니다. 도로 등급 점수는 보도 정보가 없어서 쓴 임의 설정값입니다.</p>
+    </div>
   </aside>
 </main>
 
@@ -102,6 +177,7 @@
      - 배포: Vercel 환경 변수 KAKAO_JS_KEY로 빌드할 때 config.js를 만든다 (scripts/make-config.mjs)
      키는 카카오 개발자 콘솔의 [JavaScript SDK 도메인]에 등록된 주소에서만 동작한다. -->
 <script src="config.js"></script>
+<script src="route.js"></script>
 <script>
   // 카카오 SDK는 키가 있어야 불러올 수 있다. 키가 없으면 SDK를 부르지 않고 init 단계에서 안내 문구를 보여 준다.
   if (typeof KAKAO_JS_KEY === 'string' && KAKAO_JS_KEY && !/^PUT_/.test(KAKAO_JS_KEY)) {
@@ -121,7 +197,11 @@ function showMapError(msg) {
   el.style.display = 'flex'; el.innerHTML = msg;
 }
 
-if (typeof kakao === 'undefined' || !kakao.maps || !kakao.maps.Map) {
+if (location.protocol === 'file:') {
+  // 파일을 더블클릭해서 열면 데이터(JSON)를 읽을 수 없고, 카카오 지도도 등록된 주소가 아니라서 동작하지 않는다.
+  showMapError('<b>파일로 직접 열면 동작하지 않습니다.</b><br>배포된 사이트를 여세요: <b>https://knu-safety-map.vercel.app</b><br>' +
+    '또는 이 폴더에서 <b>node scripts/serve.mjs</b>를 실행한 뒤 주소창에 <b>http://localhost:5173</b>을 입력하세요.<br>(127.0.0.1이 아니라 localhost)');
+} else if (typeof kakao === 'undefined' || !kakao.maps || !kakao.maps.Map) {
   const noKey = !(typeof KAKAO_JS_KEY === 'string' && KAKAO_JS_KEY && !/^PUT_/.test(KAKAO_JS_KEY));
   showMapError('카카오 지도를 불러오지 못했습니다.<br>' +
     (noKey ? '카카오 JavaScript 키가 설정되지 않았습니다. <b>config.example.js</b>를 <b>config.js</b>로 복사해 키를 넣으세요(배포 환경에서는 환경 변수 <b>KAKAO_JS_KEY</b>).<br>'
@@ -139,6 +219,9 @@ function init() {
   const clearEvidence = () => { evidence.forEach(o => o.setMap(null)); evidence.length = 0; };
   const infoWindow = new kakao.maps.InfoWindow({ removable: true, zIndex: 20 });
   let selected = null, shapeClickAt = 0;
+  let picked = null;                                   // 지금 선택한 구간 { f, near } — 표시 설정을 바꿨을 때 근거 점을 다시 그리기 위함
+  const ui = { ev: true, near: true };                 // 근거 점 표시 여부, 근처 점(점수에 안 쓰이는 점)도 보일지
+  const cmp = { on: false, start: null, end: null, layers: [], pins: [], dimmed: false }; // 두 길 비교 모드 상태
 
   // 도로 구간은 "흰 테두리 선(casing) + 색 선" 두 겹으로 그려서 배경 지도 위에서 색이 또렷하게 보이게 함
   const STYLE = {
@@ -147,13 +230,20 @@ function init() {
   };
   const applyStyle = (s, mode) => { s.casing.setOptions(STYLE[mode].casing); s.line.setOptions(STYLE[mode].line); };
 
+  // 오른쪽 패널은 3개: main(전체 보기) / seg(도로 구간을 눌렀을 때) / route(두 길 비교). 한 번에 하나만 보인다.
+  const panels = { main: document.getElementById('panel-main'), seg: document.getElementById('panel-seg'), route: document.getElementById('panel-route') };
+  function setPanel(name) { Object.keys(panels).forEach(k => { panels[k].hidden = k !== name; }); document.querySelector('aside').scrollTop = 0; }
+
   const clearSelection = () => {
     if (selected) { applyStyle(selected, 'normal'); selected = null; }
+    picked = null;
     clearEvidence();
     document.getElementById('detail').innerHTML = '';
+    setPanel(cmp.on ? 'route' : 'main');
   };
+  document.getElementById('btn-seg-back').addEventListener('click', () => clearSelection());
 
-  function showDetail(p) {
+  function showDetail(p, near) {
     const rows = Object.keys(LABEL).map(k => {
       const v = p.r[k];
       if (v == null) return `<div class="soon">${LABEL[k]} — 추가 예정</div>`;
@@ -163,6 +253,9 @@ function init() {
     document.getElementById('detail').innerHTML =
       `<div class="detail-score" style="color:${colorOf(p.score)}">${p.score}<span style="font-size:13px;font-weight:400;color:var(--muted)"> / 100</span></div>` +
       `<div class="note" style="margin:0 0 8px">${esc(p.name || HW[p.hw] || p.hw)} · 길이 약 ${p.len}m</div>${rows}` +
+      (near && (near.cctv.length || near.cctvOther.length || near.lights.length)
+        ? `<div class="note">근처(점수에 반영 안 됨, 다른 도로 소속): ` + [near.cctv.length ? `CCTV ${near.cctv.length}곳` : '', near.cctvOther.length ? `점수 제외 목적 CCTV ${near.cctvOther.length}곳` : '', near.lights.length ? `보안등 ${near.lights.length}개` : ''].filter(Boolean).join(' · ') + '</div>'
+        : '') +
       (p.accName ? `<div class="note">가까운 사고다발지: ${esc(p.accName)}</div>` : '');
   }
 
@@ -177,13 +270,14 @@ function init() {
     return new kakao.maps.CustomOverlay({ position: L(lat, lon), content: el, xAnchor: 0.5, yAnchor: 0.5, zIndex: z, clickable: !!onClick });
   }
 
-  Promise.all([fetch('data/risk_segments.geojson').then(r => r.json()), fetch('data/points.json').then(r => r.json())]).then(([geo, pts]) => {
+  Promise.all([fetch('data/risk_segments.geojson').then(r => r.json()), fetch('data/points.json').then(r => r.json()), fetch('data/graph.json').then(r => r.json())]).then(([geo, pts, graph]) => {
     // 학교 반경 원 (구간보다 먼저 그려서 클릭을 가리지 않게 함)
     // 점수 범위(학교 중심 정사각형)를 점선 사각형으로 표시
     const half = pts.meta.areaHalfM, dLat = half / 110540, dLon = half / (111320 * Math.cos(pts.campus.lat * Math.PI / 180));
     const areaBounds = new kakao.maps.LatLngBounds(L(pts.campus.lat - dLat, pts.campus.lon - dLon), L(pts.campus.lat + dLat, pts.campus.lon + dLon));
     new kakao.maps.Rectangle({ bounds: areaBounds, strokeWeight: 1.5, strokeColor: '#1d4ed8', strokeOpacity: 0.9, strokeStyle: 'dash', fillOpacity: 0, zIndex: 0 }).setMap(map);
 
+    const registry = []; // { f, pick }: 지도를 눌렀을 때 가장 가까운 도로를 찾는 데 쓴다 (손가락으로 얇은 선을 정확히 누르기 어려우므로)
     geo.features.forEach(f => {
       const p = f.properties;
       const path = f.geometry.coordinates.map(([lon, lat]) => L(lat, lon));
@@ -191,12 +285,15 @@ function init() {
       const line = new kakao.maps.Polyline({ path, strokeColor: colorOf(p.score), strokeStyle: 'solid', ...STYLE.normal.line });
       const seg = { line, casing };
       const pick = () => {
+        if (cmp.on) return; // 길 비교 중에는 도로를 눌러도 출발·도착 지정(지도 클릭)으로 처리
         shapeClickAt = Date.now(); // 선을 눌러도 지도 클릭 이벤트가 이어서 발생하므로, 그 클릭은 무시하기 위한 표시
         infoWindow.close();
         if (selected) applyStyle(selected, 'normal');
         selected = seg; applyStyle(seg, 'picked');
-        showDetail(p); showEvidence(f);
+        const near = nearbyOf(f); picked = { f, near };
+        showDetail(p, near); renderEvidence(); setPanel('seg');
       };
+      registry.push({ f, pick });
       kakao.maps.event.addListener(line, 'click', pick);
       kakao.maps.event.addListener(casing, 'click', pick); // 테두리 선도 눌러지게 해서 클릭 범위를 넓힘
       groups.seg.push(casing, line);
@@ -234,17 +331,168 @@ function init() {
       }
       return m;
     };
-    function showEvidence(f) {
-      clearEvidence();
+    // 근처 점: 이 구간의 집계 거리 안에 있지만 "다른 도로 소속"이라 점수에 반영되지 않은 점 (표시만 하고 점수는 바꾸지 않는다)
+    //   - CCTV(방범·어린이보호) 100m 이내, 점수에서 뺀 목적의 CCTV 100m 이내, 보안등 40m 이내
+    function nearbyOf(f) {
       const line = f.geometry.coordinates.map(([lon, lat]) => toXY(lat, lon));
+      const haveC = new Set(f.properties.ci || []), haveL = new Set(f.properties.li || []);
+      const { lightBufM, cctvBufM } = pts.meta.params, near = { cctv: [], cctvOther: [], lights: [] };
+      pts.cctv.forEach((c, i) => { if (!haveC.has(i) && distToLine(toXY(c[0], c[1]), line) <= cctvBufM) (c[5] ? near.cctv : near.cctvOther).push(i); });
+      pts.lights.forEach((l, i) => { if (!haveL.has(i) && distToLine(toXY(l[0], l[1]), line) <= lightBufM) near.lights.push(i); });
+      return near;
+    }
+    // 선택한 구간의 근거 점을 (표시 설정에 맞게) 다시 그린다.
+    function renderEvidence() {
+      clearEvidence();
+      if (!picked || !ui.ev) return;
+      const { f, near } = picked, line = f.geometry.coordinates.map(([lon, lat]) => toXY(lat, lon));
       const { accFarM } = pts.meta.params;
       const add = o => { o.setMap(map); evidence.push(o); };
+      const cctvTitle = (c, extra) => `CCTV ${c[3]}대 · ${c[2]}${c[4] ? ' · 설치 ' + c[4] : ''}${extra || ''}`;
       (f.properties.li || []).forEach(i => { const [lat, lon] = pts.lights[i]; add(dot(lat, lon, 'mk-light ev', { z: 9 })); });
-      (f.properties.ci || []).forEach(i => {
-        const [lat, lon, purpose, n, ym] = pts.cctv[i];
-        add(dot(lat, lon, 'mk-cctv ev', { z: 9, title: `CCTV ${n}대 · ${purpose}${ym ? ' · 설치 ' + ym : ''}` }));
-      });
+      (f.properties.ci || []).forEach(i => { const c = pts.cctv[i]; add(dot(c[0], c[1], 'mk-cctv ev', { z: 9, title: cctvTitle(c) })); });
+      if (ui.near) {
+        near.lights.forEach(i => { const [lat, lon] = pts.lights[i]; add(dot(lat, lon, 'mk-light near', { z: 8, title: '근처 보안등 (다른 도로 소속, 점수에 반영 안 됨)' })); });
+        near.cctv.forEach(i => { const c = pts.cctv[i]; add(dot(c[0], c[1], 'mk-cctv near', { z: 8, title: cctvTitle(c, ' (근처, 다른 도로 소속, 점수에 반영 안 됨)') })); });
+        near.cctvOther.forEach(i => { const c = pts.cctv[i]; add(dot(c[0], c[1], 'mk-cctv near other', { z: 8, title: cctvTitle(c, ' (점수에서 뺀 목적, 점수에 반영 안 됨)') })); });
+      }
       pts.accidents.forEach(a => { if (distToLine(toXY(a.lat, a.lon), line) <= accFarM) add(makeAccident(a)); });
+    }
+    document.getElementById('o-near').addEventListener('change', e => { ui.near = e.target.checked; renderEvidence(); });
+    const evBtn = document.getElementById('btn-ev');
+    evBtn.addEventListener('click', () => { ui.ev = !ui.ev; evBtn.textContent = ui.ev ? '근거 점 숨기기' : '근거 점 보이기'; renderEvidence(); });
+
+    // ===== 두 길 비교 (route.js 사용) =====
+    // 색칠: 두 경로가 지나는 모든 구간에 점수 색 띠(연하게)를 깔고, 그 위에 추천(안전) 경로(윤곽선 있는 초록 실선+화살표)와 최단 경로(검은 점선)를 올린다.
+    const segById = new Map(geo.features.map(f => [f.properties.id, f.properties]));
+    const rg = Route.buildGraph(graph, segById), rctx = { segById, lights: pts.lights, cctv: pts.cctv };
+    const cmpBtn = document.getElementById('btn-cmp'), cmpMsg = document.getElementById('cmp-msg'), cmpBox = document.getElementById('cmp');
+    const say = (t, err) => { cmpMsg.textContent = t || ''; cmpMsg.className = err ? 'err' : ''; };
+    const addCmp = (o, bucket = cmp.layers) => { o.setMap(map); bucket.push(o); return o; };
+    const dimSegments = on => { // 경로를 보여 주는 동안 기존 점수 색 도로는 흐리게
+      if (cmp.dimmed === on) return; cmp.dimmed = on;
+      groups.seg.forEach((o, i) => o.setOptions({ strokeOpacity: on ? (i % 2 ? 0.28 : 0.15) : (i % 2 ? 1 : 0.9) }));
+    };
+    // 경로 주변 점: 두 경로의 구간에 반영된 보안등·CCTV(비교 표의 숫자와 같은 점)를 지도에 표시. 종류별로 켜고 끌 수 있다.
+    const rpts = { light: [], cctv: [] }, rptsBox = document.getElementById('route-pts'), rptsOn = { light: true, cctv: true };
+    const applyRoutePts = () => Object.keys(rpts).forEach(k => rpts[k].forEach(o => o.setMap(rptsOn[k] ? map : null)));
+    const rpAll = document.getElementById('rp-all');
+    const syncAll = () => { // 전체 체크박스: 둘 다 켜짐 = 체크, 둘 다 꺼짐 = 해제, 하나만 켜짐 = 중간 상태
+      const n = (rptsOn.light ? 1 : 0) + (rptsOn.cctv ? 1 : 0); rpAll.checked = n === 2; rpAll.indeterminate = n === 1;
+    };
+    [['light', 'rp-light'], ['cctv', 'rp-cctv']].forEach(([k, id]) => document.getElementById(id).addEventListener('change', e => { rptsOn[k] = e.target.checked; applyRoutePts(); syncAll(); }));
+    rpAll.addEventListener('change', e => {
+      rptsOn.light = rptsOn.cctv = e.target.checked;
+      document.getElementById('rp-light').checked = document.getElementById('rp-cctv').checked = e.target.checked;
+      applyRoutePts(); syncAll();
+    });
+    function drawRoutePoints(r) {
+      const sids = new Set([...r.shortest.edges, ...r.safe.edges].map(e => e.sid)), li = new Set(), ci = new Set();
+      sids.forEach(id => { const p = segById.get(id); p.li.forEach(i => li.add(i)); p.ci.forEach(i => ci.add(i)); });
+      li.forEach(i => rpts.light.push(dot(pts.lights[i][0], pts.lights[i][1], 'mk-light ev', { z: 9, title: '보안등 (경로 구간에 반영된 점)' })));
+      ci.forEach(i => { const c = pts.cctv[i]; rpts.cctv.push(dot(c[0], c[1], 'mk-cctv ev', { z: 9, title: `CCTV ${c[3]}대 · ${c[2]}${c[4] ? ' · 설치 ' + c[4] : ''}` })); });
+      applyRoutePts(); rptsBox.hidden = false;
+    }
+    const clearRoutes = () => { cmp.layers.forEach(o => o.setMap(null)); cmp.layers.length = 0; Object.keys(rpts).forEach(k => { rpts[k].forEach(o => o.setMap(null)); rpts[k].length = 0; }); rptsBox.hidden = true; cmpBox.innerHTML = ''; dimSegments(false); };
+    const clearPoints = () => { cmp.pins.forEach(o => o.setMap(null)); cmp.pins.length = 0; cmp.start = cmp.end = null; };
+    const redoBtn = document.getElementById('btn-redo');
+    const syncRedo = () => { redoBtn.hidden = !(cmp.on && cmp.start); }; // 출발지를 찍은 뒤부터 [다시 고르기] 표시
+    const resetCompare = () => { clearRoutes(); clearPoints(); syncRedo(); };
+
+    function drawPin(sn, label, cls) {
+      addCmp(dot(sn.lat, sn.lon, 'mk-pt ' + cls, { z: 16 }), cmp.pins);
+      addCmp(new kakao.maps.CustomOverlay({ position: L(sn.clickLat, sn.clickLon), content: Object.assign(document.createElement('div'), { className: 'mk-pin ' + cls, textContent: label }), xAnchor: 0.5, yAnchor: 1, zIndex: 17 }), cmp.pins);
+      if (sn.dist > 2) addCmp(new kakao.maps.Polyline({ path: [L(sn.clickLat, sn.clickLon), L(sn.lat, sn.lon)], strokeColor: '#475569', strokeWeight: 2, strokeStyle: 'shortdot', strokeOpacity: 1, zIndex: 15 }), cmp.pins);
+    }
+
+    function drawRoutes(r) {
+      const drawn = new Set(), runs = [], key = e => Math.min(e.a, e.b) + '-' + Math.max(e.a, e.b);
+      for (const rt of [r.shortest, r.safe]) { // 같은 구간은 한 번만, 같은 도로(구간 id)가 이어지면 한 줄로 묶어 색 띠를 만든다
+        let run = null;
+        rt.edges.forEach((e, i) => {
+          if (drawn.has(key(e))) { run = null; return; } drawn.add(key(e));
+          if (run && run.sid === e.sid) run.path.push(rt.coords[i + 1]);
+          else { run = { sid: e.sid, score: e.score, path: [rt.coords[i], rt.coords[i + 1]] }; runs.push(run); }
+        });
+      }
+      const P = pathArr => pathArr.map(([la, lo]) => L(la, lo));
+      runs.forEach(u => addCmp(new kakao.maps.Polyline({ path: P(u.path), strokeColor: '#ffffff', strokeWeight: 19, strokeOpacity: 0.95, strokeStyle: 'solid', zIndex: 10 })));
+      runs.forEach(u => addCmp(new kakao.maps.Polyline({ path: P(u.path), strokeColor: colorOf(u.score), strokeWeight: 13, strokeOpacity: 0.8, strokeStyle: 'solid', zIndex: 11 })));
+      // 추천(안전) 경로: 길 가운데는 구간 점수 색(진하게), 양쪽 가장자리에만 진한 초록 윤곽선. 최단 경로는 그 위에 가는 검은 점선
+      addCmp(new kakao.maps.Polyline({ path: P(r.safe.coords), strokeColor: '#064e2b', strokeWeight: 16, strokeOpacity: 1, strokeStyle: 'solid', zIndex: 12 }));
+      let sRun = null; const safeRuns = [];
+      r.safe.edges.forEach((e, i) => {
+        if (sRun && sRun.sid === e.sid) sRun.path.push(r.safe.coords[i + 1]);
+        else { sRun = { sid: e.sid, score: e.score, path: [r.safe.coords[i], r.safe.coords[i + 1]] }; safeRuns.push(sRun); }
+      });
+      safeRuns.forEach(u => addCmp(new kakao.maps.Polyline({ path: P(u.path), strokeColor: colorOf(u.score), strokeWeight: 10, strokeOpacity: 1, strokeStyle: 'solid', zIndex: 13 })));
+      addCmp(new kakao.maps.Polyline({ path: P(r.shortest.coords), strokeColor: '#111111', strokeWeight: 3, strokeOpacity: 1, strokeStyle: 'shortdash', zIndex: 14 }));
+      // 가는 방향 화살표 (약 100m마다, 최소 1개)
+      const xy = r.safe.coords.map(([la, lo]) => Route.toXY(la, lo)), total = r.safe.len, step = Math.max(40, Math.min(100, total / 3));
+      let acc = 0, nextAt = step / 2;
+      for (let i = 1; i < xy.length; i++) {
+        const dx = xy[i][0] - xy[i - 1][0], dy = xy[i][1] - xy[i - 1][1], d = Math.hypot(dx, dy); if (!d) continue;
+        while (nextAt <= acc + d) {
+          const t = (nextAt - acc) / d, la = r.safe.coords[i - 1][0] + t * (r.safe.coords[i][0] - r.safe.coords[i - 1][0]), lo = r.safe.coords[i - 1][1] + t * (r.safe.coords[i][1] - r.safe.coords[i - 1][1]);
+          const el = document.createElement('div'); el.className = 'mk-arrow'; el.style.transform = `rotate(${Math.atan2(dx, dy) * 180 / Math.PI}deg)`;
+          el.innerHTML = '<svg width="18" height="18" viewBox="0 0 16 16"><path d="M8 1 L14 14 L8 11 L2 14 Z" fill="#fff" stroke="#064e2b" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+          addCmp(new kakao.maps.CustomOverlay({ position: L(la, lo), content: el, xAnchor: 0.5, yAnchor: 0.5, zIndex: 15 }));
+          nextAt += step;
+        }
+        acc += d;
+      }
+      const b = new kakao.maps.LatLngBounds(); [...r.shortest.coords, ...r.safe.coords].forEach(([la, lo]) => b.extend(L(la, lo)));
+      map.setBounds(b, 70, 70, 70, 70);
+    }
+
+    const fmt = { m: v => Math.round(v).toLocaleString() + 'm', min: v => Math.max(1, Math.round(v)) + '분', sc: v => v.toFixed(1) + '점', pct: v => Math.round(v * 100) + '%' };
+    function renderResult(r) {
+      const S = Route.summarize(r.shortest, rctx), F = Route.summarize(r.safe, rctx);
+      const rows = [ // [이름, 값 만들기, 더 좋은 쪽 (low/high/null)]
+        ['거리', s => fmt.m(s.distanceM), 'low'], ['걷는 시간 (4km/h)', s => '약 ' + fmt.min(s.minutes), 'low'],
+        ['평균 보행 주의 점수', s => fmt.sc(s.avgScore), 'low'], ['60점 이상 구간 비율', s => fmt.pct(s.hiShare), 'low'],
+        ['반영된 보안등', s => s.lightCount + '개', 'high'], ['반영된 CCTV', s => s.cctvSpots + '곳', 'high'],
+        ['근처 사고다발지', s => s.accidents.length + '곳', 'low'], ['계단 구간', s => s.stepsLenM ? fmt.m(s.stepsLenM) : '없음', 'low'],
+      ];
+      const val = { 거리: s => s.distanceM, '평균 보행 주의 점수': s => s.avgScore, '60점 이상 구간 비율': s => s.hiShare, '반영된 보안등': s => s.lightCount, '반영된 CCTV': s => s.cctvSpots, '근처 사고다발지': s => s.accidents.length, '계단 구간': s => s.stepsLenM };
+      const cell = (name, mk, better, me, other) => { const f = val[name]; const win = !r.same && f && f(me) !== f(other) && (better === 'low' ? f(me) < f(other) : f(me) > f(other)); return `<td${win ? ' class="best"' : ''}>${esc(mk(me))}</td>`; };
+      const head = r.same ? '<th>경로</th>' : '<th>최단</th><th>추천</th>';
+      const body = rows.map(([name, mk, better]) => `<tr><td>${name}</td>${r.same ? `<td>${esc(mk(S))}</td>` : cell(name, mk, better, S, F) + cell(name, mk, better, F, S)}</tr>`).join('');
+      const legend = `<div class="legend-row"><svg width="34" height="16"><line x1="0" y1="8" x2="34" y2="8" stroke="#064e2b" stroke-width="16"/><line x1="0" y1="8" x2="11" y2="8" stroke="#f2d544" stroke-width="10"/><line x1="11" y1="8" x2="23" y2="8" stroke="#f28c28" stroke-width="10"/><line x1="23" y1="8" x2="34" y2="8" stroke="#2f6fb5" stroke-width="10"/></svg> <span><b>추천 경로</b> (보행 주의 점수가 더 낮은 길, 화살표 방향으로 이동). 초록 윤곽선 안의 색 = 구간 점수</span></div>
+        <div class="legend-row"><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="#111" stroke-width="3" stroke-dasharray="7 4"/></svg> 최단 경로 (참고용)</div>
+        <div class="legend-row"><span style="display:inline-flex;width:34px;height:8px;opacity:.8">${COLORS.map(c => `<i style="flex:1;background:${c}"></i>`).join('')}</span> 색 = 구간의 보행 주의 점수 (최단 경로만 지나는 구간은 연한 띠)</div>
+        <div class="note" style="margin:0 0 0 42px">${COLORS.map((c, i) => `<span style="white-space:nowrap"><span class="dot" style="width:9px;height:9px;background:${c}"></span> ${['0–19 낮음', '20–39', '40–59', '60–79', '80–100 높음'][i]}</span>`).join(' &nbsp;')}</div>`;
+      const warns = [];
+      if (r.warnings.includes('detour')) warns.push(`추천 경로가 최단 경로보다 ${Math.round((r.detour - 1) * 100)}% 더 멉니다(기준 ${Math.round((rg.opts.detourCap - 1) * 100)}%). 감수할 만한지 판단해 주세요.`);
+      if (r.warnings.includes('steps')) warns.push(`추천 경로에 계단 구간이 약 ${Math.round(F.stepsLenM)}m 포함되어 있습니다.`);
+      let summary;
+      if (r.same) summary = '점수를 고려해도 최단 경로가 바뀌지 않았습니다. 두 경로가 같은 길입니다.';
+      else { const dm = F.distanceM - S.distanceM, ds = S.avgScore - F.avgScore; summary = `추천 경로는 최단 경로보다 ${Math.round(dm)}m(${Math.round(dm / S.distanceM * 100)}%) 더 걷고, 평균 점수가 ${ds.toFixed(1)}점 낮습니다.`; }
+      const accs = [...new Set([...S.accidents, ...F.accidents])];
+      cmpBox.innerHTML = `<div class="note" style="margin:0 0 4px;font-size:13px;color:var(--fg)">${esc(summary)}</div>${warns.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('')}
+        <table class="cmp"><tr><th></th>${head}</tr>${body}</table>${accs.length ? `<div class="note">근처 사고다발지: ${accs.map(esc).join(', ')}</div>` : ''}
+        <div style="margin-top:8px">${legend}</div>
+        <div class="note">추천 경로는 "보행 주의 점수"가 더 낮은 길을 고른 것으로, 안전을 보장하지 않습니다. 횡단보도·보도 유무와 시간대별 통행량은 반영되지 않았습니다. 보안등·CCTV 수는 각 경로 구간에 반영된 점을 중복 없이 센 값이고, 지도의 점은 두 경로 구간에 반영된 점을 합쳐 보여 줍니다.</div>`;
+    }
+
+    // 패널 전환: 길 비교를 시작하면 비교 전용 패널만, 끝내면 기본 패널만 보인다
+    function startCompare() { cmp.on = true; clearSelection(); infoWindow.close(); setPanel('route'); say('지도에서 출발지를 누르세요. 도로 가까이(60m 이내)를 누르면 가장 가까운 도로에 붙습니다.'); }
+    function stopCompare() { cmp.on = false; resetCompare(); say(''); setPanel('main'); }
+    cmpBtn.addEventListener('click', startCompare);
+    document.getElementById('btn-cmp-end').addEventListener('click', stopCompare);
+    redoBtn.addEventListener('click', () => { resetCompare(); say('지도에서 출발지를 누르세요.'); });
+
+    function compareClick(lat, lon) {
+      // 경로를 만든 뒤에는 지도를 눌러도 바뀌지 않는다 (실수로 눌러 경로가 사라지는 것을 막기 위해). 새로 고르려면 [다시 고르기]
+      if (cmp.start && cmp.end) return say('경로는 그대로 두었습니다. 새로 고르려면 [다시 고르기]를 누르세요.');
+      const sn = Route.snapToRoad(rg, lat, lon);
+      if (sn.status === 'far') return say(`이 근처에는 걸어갈 수 있는 도로가 없습니다(가장 가까운 도로까지 약 ${Math.round(sn.dist)}m). 도로 가까이를 눌러 주세요.`, true);
+      if (sn.status === 'isolated') return say('이 지점은 산길로만 이어진 곳(또는 끊긴 지역)이라 경로를 만들 수 없습니다. 다른 곳을 눌러 주세요.', true);
+      if (!cmp.start) { cmp.start = sn; drawPin(sn, '출발', 's'); syncRedo(); say('도착지를 누르세요.'); return; }
+      const r = Route.findRoutes(rg, cmp.start, sn);
+      if (!r.ok) return say(r.reason === 'same-point' ? '출발지와 같은 곳입니다. 다른 곳을 도착지로 눌러 주세요.' : '두 지점이 도로로 이어져 있지 않아 경로를 만들 수 없습니다. 다른 곳을 눌러 주세요.', true);
+      cmp.end = sn; drawPin(sn, '도착', 'e'); dimSegments(true); drawRoutes(r); drawRoutePoints(r); renderResult(r);
+      say('새로 고르려면 [다시 고르기]를 누르세요.');
     }
 
     // 학교 표시
@@ -270,10 +518,31 @@ function init() {
     fitDots(); refresh();
     kakao.maps.event.addListener(map, 'zoom_changed', fitDots);
 
-    kakao.maps.event.addListener(map, 'click', () => {
+    kakao.maps.event.addListener(map, 'click', e => {
+      if (cmp.on) { compareClick(e.latLng.getLat(), e.latLng.getLng()); return; }
       if (Date.now() - shapeClickAt < 400) return;
+      const hit = nearestSegment(e.latLng); // 선을 정확히 못 눌러도 화면에서 가까운 도로(손가락 12~24px 이내)를 고른다
+      if (hit) { hit.pick(); return; }
       infoWindow.close(); clearSelection();
     });
+    function nearestSegment(latLng) {
+      if (!state.seg) return null; // 도로 레이어를 꺼 두었으면 보이지 않는 도로를 고르지 않는다
+      const proj = map.getProjection(), c = proj.containerPointFromCoords(latLng);
+      let best = null, bd = matchMedia('(pointer: coarse)').matches ? 24 : 12;
+      for (const s of registry) {
+        let prev = null;
+        for (const [lon, lat] of s.f.geometry.coordinates) {
+          const q = proj.containerPointFromCoords(L(lat, lon));
+          if (prev) {
+            const dx = q.x - prev.x, dy = q.y - prev.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((c.x - prev.x) * dx + (c.y - prev.y) * dy) / l2)) : 0;
+            const d = Math.hypot(c.x - (prev.x + t * dx), c.y - (prev.y + t * dy));
+            if (d < bd) { bd = d; best = s; }
+          }
+          prev = q;
+        }
+      }
+      return best;
+    }
     window.addEventListener('resize', () => map.relayout());
 
     document.getElementById('n-light').textContent = `(${pts.lights.length}지점)`;
@@ -282,11 +551,12 @@ function init() {
     document.getElementById('n-acc').textContent = `(${pts.accidents.length})`;
 
     const w = pts.meta.weights;
-    document.getElementById('weights').innerHTML = Object.keys(LABEL).map(k =>
+    const weightRows = Object.keys(LABEL).map(k =>
       w[k] > 0 ? `<tr><td>${LABEL[k]}</td><td>${Math.round(w[k] * 100)}%</td></tr>` : `<tr class="soon"><td>${LABEL[k]}</td><td>추가 예정</td></tr>`).join('');
+    ['weights', 'weights-seg'].forEach(id => { document.getElementById(id).innerHTML = weightRows; }); // 기본 패널과 구간 패널에 같은 표
     const s = pts.meta.sources;
     document.getElementById('sources').innerHTML = [s.lights, s.cctv, s.accidents, s.roads + ' (도로 구간)', '지도: © Kakao'].map(esc).join('<br>') + `<br>계산일 ${esc(pts.meta.generated)} · 범위 학교 중심 ${pts.meta.areaHalfM * 2 / 1000}km 사각형`;
-  }).catch(e => { document.getElementById('detail').textContent = '데이터를 불러오지 못했습니다. 로컬 서버로 열어 주세요: ' + e.message; });
+  }).catch(e => { showMapError('데이터를 불러오지 못했습니다.<br>로컬 서버(<b>node scripts/serve.mjs</b> → <b>http://localhost:5173</b>)나 배포된 사이트로 여세요.<br>' + esc(e.message)); });
 }
 </script>
 </body>

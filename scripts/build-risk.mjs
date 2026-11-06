@@ -1,4 +1,4 @@
-// 경남대 주변 보행 구간별 "야간 주의" 점수 계산 (프로토타입)
+// 경남대 주변 보행 구간별 "보행 주의" 점수 계산 (프로토타입)
 // 입력: data/streetlight_changwon.csv, data/cctv_changwon.csv, data/accident_hotspots_knu_2.4km.csv, OSM 도로망(Overpass)
 // 출력: data/risk_segments.geojson, data/points.json, data/graph.json (경로 탐색용 도로망)
 import fs from 'node:fs';
