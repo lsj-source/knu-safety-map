@@ -6,6 +6,11 @@
 <title>경남대 주변 보행 안전 지도</title>
 <style>
   :root {
+    /* CCTV 카메라 아이콘 (SVG를 CSS 변수로): 진한 = 점수에 쓰이는 CCTV, 회색 = 점수 제외 CCTV, 속 빈 = 근처 점(점수에 안 쓰임) */
+    --cam-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-11 -9 22 18'%3E%3Crect x='-9' y='-4.8' width='12.5' height='9.6' rx='2' fill='%230f172a' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M3.5 -3 L9.5 -6 L9.5 6 L3.5 3 Z' fill='%230f172a' stroke='white' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='-3' cy='0' r='2.3' fill='%2393c5fd'/%3E%3Cline x1='-9' y1='-4.8' x2='-9' y2='-8' stroke='%230f172a' stroke-width='2'/%3E%3C/svg%3E");
+    --cam-gray: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-11 -9 22 18'%3E%3Crect x='-9' y='-4.8' width='12.5' height='9.6' rx='2' fill='%2394a3b8' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M3.5 -3 L9.5 -6 L9.5 6 L3.5 3 Z' fill='%2394a3b8' stroke='white' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='-3' cy='0' r='2.3' fill='%23e2e8f0'/%3E%3Cline x1='-9' y1='-4.8' x2='-9' y2='-8' stroke='%2394a3b8' stroke-width='2'/%3E%3C/svg%3E");
+    --cam-hollow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-11 -9 22 18'%3E%3Crect x='-9' y='-4.8' width='12.5' height='9.6' rx='2' fill='white' stroke='%23475569' stroke-width='1.5'/%3E%3Cpath d='M3.5 -3 L9.5 -6 L9.5 6 L3.5 3 Z' fill='white' stroke='%23475569' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='-3' cy='0' r='2.3' fill='%23cbd5e1'/%3E%3Cline x1='-9' y1='-4.8' x2='-9' y2='-8' stroke='%23475569' stroke-width='2'/%3E%3C/svg%3E");
+    --cam-hollow-other: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-11 -9 22 18'%3E%3Crect x='-9' y='-4.8' width='12.5' height='9.6' rx='2' fill='%23e2e8f0' stroke='%2394a3b8' stroke-width='1.5' stroke-dasharray='2.5 1.5'/%3E%3Cpath d='M3.5 -3 L9.5 -6 L9.5 6 L3.5 3 Z' fill='%23e2e8f0' stroke='%2394a3b8' stroke-width='1.5' stroke-dasharray='2.5 1.5' stroke-linejoin='round'/%3E%3Ccircle cx='-3' cy='0' r='2.3' fill='%23f8fafc'/%3E%3C/svg%3E");
     --bg: #ffffff; --fg: #1f2430; --muted: #646b7a; --line: #dfe3ea; --accent: #1d4ed8;
     /* 점수 구간 색: 단계마다 색 계열이 달라지게 (파랑 → 노랑 → 주황 → 빨강 → 진보라). 명도도 함께 달라 색약자도 구분 가능 */
     --s1: #2f6fb5; --s2: #f2d544; --s3: #f28c28; --s4: #d7301f; --s5: #5b1a5e;
@@ -35,21 +40,22 @@
   .meter { height: 8px; border-radius: 4px; background: #eceff4; overflow: hidden; margin: 2px 0 6px; }
   .meter > i { display: block; height: 100%; }
   /* 선택한 구간의 근거 점은 눈에 띄게 크게 */
-  .mk-light.ev { width: 14px; height: 14px; border: 2px solid #1f2937; background: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.95), 0 1px 4px rgba(0,0,0,.5); opacity: 1; }
-  .mk-cctv.ev { width: 15px; height: 15px; box-shadow: 0 0 0 1px #0f172a, 0 1px 4px rgba(0,0,0,.5); }
+  .mk-light.ev { width: 14px; height: 14px; border: 2px solid #1f2937; background: #fff; box-shadow: 0 0 0 4px rgba(253,230,138,.9), 0 1px 4px rgba(0,0,0,.35); opacity: 1; }
+  .mk-cctv.ev { width: 26px; height: 21px; }
   /* 지도 위 점 표시 (카카오 CustomOverlay 내용물) */
   /* 점 표시: 도로 색(파랑~보라)과 겹치지 않게 흰색·남색·자홍색을 쓰고, 모양으로도 구분 */
   .mk { box-sizing: border-box; }
   /* 보안등은 개수가 많아서 줌 단계에 따라 크기를 바꿈 (--ls는 JS가 지도 줌에 맞춰 설정): 멀리서는 작게, 확대하면 크게 */
   #map { --ls: 7px; }
-  .mk-light { width: var(--ls); height: var(--ls); border-radius: 50%; background: #fff; border: 1.5px solid #1f2937; opacity: .92; pointer-events: none; }
+  /* 보안등 = "빛": 흰 원 + 노란 광채. CCTV = "카메라" 모양 (두 시설을 모양으로 먼저 구분. 도로 점수 색과 섞이지 않게 흰색·남색 계열) */
+  .mk-light { width: var(--ls); height: var(--ls); border-radius: 50%; background: #fff; border: 1.5px solid #1f2937; box-shadow: 0 0 0 calc(var(--ls) * .38) rgba(253,230,138,.85); opacity: .95; pointer-events: none; }
   .mk-light.big { width: calc(var(--ls) + 3px); height: calc(var(--ls) + 3px); }
-  .mk-cctv { width: 11px; height: 11px; border-radius: 2px; background: #0f172a; border: 2px solid #fff; box-shadow: 0 0 0 1px #0f172a; cursor: pointer; }
-  .mk-cctv2 { width: 11px; height: 11px; border-radius: 2px; background: #cbd5e1; border: 2px solid #475569; cursor: pointer; }
+  .mk-cctv, .mk-cctv2 { width: 22px; height: 18px; background: var(--cam-dark) center / 100% 100% no-repeat; cursor: pointer; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.4)); }
+  .mk-cctv2 { background-image: var(--cam-gray); }
   /* 길을 눌렀을 때 함께 보이는 "근처 점": 점수에 반영된 점(진한 모양)과 구분되게 속이 빈 모양 */
   .mk-light.near { width: 12px; height: 12px; background: transparent; border: 2px dashed #64748b; box-shadow: none; opacity: 1; }
-  .mk-cctv.near { width: 13px; height: 13px; border-radius: 2px; background: #fff; border: 2px solid #475569; box-shadow: none; }
-  .mk-cctv.near.other { background: #e2e8f0; border: 2px dashed #94a3b8; }
+  .mk-cctv.near { width: 22px; height: 18px; background-image: var(--cam-hollow); filter: none; }
+  .mk-cctv.near.other { background-image: var(--cam-hollow-other); }
   .btn { font: inherit; font-size: 13px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); cursor: pointer; margin: 6px 0 2px; }
   .btn:hover { border-color: var(--accent); }
   /* 두 길 비교: 출발·도착 표시, 비교 표 */
@@ -77,6 +83,8 @@
   /* 경로 주변 점의 소속 구분: 추천 경로 구간 = 초록 실선 테두리, 최단 경로에만 해당 = 검은 점선 테두리 */
   .mk.ring-rec { outline: 3px solid #16a34a; outline-offset: 1px; }
   .mk.ring-sh { outline: 2px dashed #111; outline-offset: 2px; }
+  .mk-light.ring-rec, .mk-light.ring-sh { outline-offset: 5px; } /* 광채 바깥에 링이 오도록 */
+  .mk-cctv.ring-rec, .mk-cctv.ring-sh { border-radius: 5px; }
   .ring-key { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 1.5px solid #1f2937; vertical-align: -2px; margin-right: 6px; }
   .ring-key.rec { outline: 3px solid #16a34a; outline-offset: 1px; }
   .ring-key.sh { outline: 2px dashed #111; outline-offset: 2px; }
@@ -110,7 +118,12 @@
     table.cmp th, table.cmp td { padding: 6px 0; }
     .iw { width: 240px; }
   }
-  @media (pointer: coarse) { .mk-light { pointer-events: none; } .mk-cctv, .mk-cctv2 { min-width: 14px; min-height: 14px; } }
+  @media (pointer: coarse) { .mk-light { pointer-events: none; } }
+  /* 범례(오른쪽 패널) 아이콘: 지도의 모양과 같게 */
+  .ic-light { display: inline-block; flex: none; width: 11px; height: 11px; margin: 0 5px 0 3px; border-radius: 50%; background: #fff; border: 2px solid #1f2937; box-shadow: 0 0 0 3px rgba(253,230,138,.9); }
+  .ic-cctv, .ic-cctv2, .ic-cctv-hollow { display: inline-block; flex: none; width: 21px; height: 17px; background: var(--cam-dark) center / 100% 100% no-repeat; }
+  .ic-cctv2 { background-image: var(--cam-gray); }
+  .ic-cctv-hollow { background-image: var(--cam-hollow); }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #151821; --fg: #e6e8ee; --muted: #9aa1b2; --line: #2b3040; }
     .meter { background: #2b3040; }
@@ -146,8 +159,8 @@
         <div class="note" style="margin:0">경로 주변 점 표시</div>
         <div class="rp-row">
           <label class="row"><input type="checkbox" id="rp-all" checked> <b>전체</b></label>
-          <label class="row"><input type="checkbox" id="rp-light" checked> <span class="dot" style="width:11px;height:11px;background:#fff;border:2px solid #1f2937"></span> 보안등</label>
-          <label class="row"><input type="checkbox" id="rp-cctv" checked> <span class="dot" style="width:12px;height:12px;border-radius:2px;background:#0f172a;border:2px solid #fff;box-shadow:0 0 0 1px #0f172a"></span> CCTV</label>
+          <label class="row"><input type="checkbox" id="rp-light" checked> <span class="ic-light"></span> 보안등</label>
+          <label class="row"><input type="checkbox" id="rp-cctv" checked> <span class="ic-cctv"></span> CCTV</label>
         </div>
         <div class="note" style="margin:2px 0 6px 2px"><span class="ring-key rec"></span> 추천 경로 구간의 점 &nbsp; <span class="ring-key sh" style="margin-left:4px"></span> 최단 경로에만 해당하는 점</div>
       </div>
@@ -165,8 +178,8 @@
       <p class="note">점수 = 항목별 주의도(0~1)의 가중 평균 × 100. 위 막대는 이 구간의 항목별 주의도이고, 높을수록 걸을 때 더 주의가 필요한 환경이라는 뜻입니다. 범죄나 사고 발생을 단정하지 않습니다.</p>
 
       <h2>지도에 보이는 점</h2>
-      <div class="legend-row"><span class="dot" style="width:11px;height:11px;border-radius:2px;background:#0f172a;border:2px solid #fff;box-shadow:0 0 0 1px #0f172a"></span> 진한 모양 = 이 도로에 반영된 점 (점수에 쓰임)</div>
-      <div class="legend-row"><span class="dot" style="width:11px;height:11px;border-radius:2px;background:#fff;border:2px solid #475569"></span> 속 빈 모양 = 근처 점 (다른 도로 소속, <b>점수에 안 쓰임</b>)</div>
+      <div class="legend-row"><span class="ic-cctv"></span> 진한 모양 = 이 도로에 반영된 점 (점수에 쓰임)</div>
+      <div class="legend-row"><span class="ic-cctv-hollow"></span> 속 빈 모양 = 근처 점 (다른 도로 소속, <b>점수에 안 쓰임</b>)</div>
       <label class="row"><input type="checkbox" id="o-near" checked> 근처 CCTV·보안등도 함께 보기</label>
       <button type="button" class="btn" id="btn-ev">근거 점 숨기기</button>
     </div>
@@ -182,9 +195,9 @@
 
     <h2>표시할 레이어</h2>
     <label class="row"><input type="checkbox" id="l-seg" checked> 도로 구간 점수</label>
-    <label class="row"><input type="checkbox" id="l-light" checked> <span class="dot" style="width:11px;height:11px;background:#fff;border:2px solid #1f2937"></span> 보안등 <span class="soon" id="n-light"></span></label>
-    <label class="row"><input type="checkbox" id="l-cctv" checked> <span class="dot" style="width:12px;height:12px;border-radius:2px;background:#0f172a;border:2px solid #fff;box-shadow:0 0 0 1px #0f172a"></span> CCTV(방범·어린이보호) <span class="soon" id="n-cctv"></span></label>
-    <label class="row"><input type="checkbox" id="l-cctv2"> <span class="dot" style="width:12px;height:12px;border-radius:2px;background:#cbd5e1;border:2px solid #475569"></span> CCTV(그 외, 점수 제외) <span class="soon" id="n-cctv2"></span></label>
+    <label class="row"><input type="checkbox" id="l-light" checked> <span class="ic-light"></span> 보안등 <span class="soon" id="n-light"></span></label>
+    <label class="row"><input type="checkbox" id="l-cctv" checked> <span class="ic-cctv"></span> CCTV(방범·어린이보호) <span class="soon" id="n-cctv"></span></label>
+    <label class="row"><input type="checkbox" id="l-cctv2"> <span class="ic-cctv2"></span> CCTV(그 외, 점수 제외) <span class="soon" id="n-cctv2"></span></label>
     <label class="row"><input type="checkbox" id="l-acc"> <span class="dot" style="width:16px;height:16px;background:#e6007e;border:2px solid #fff;box-shadow:0 0 0 1px #e6007e;color:#fff;font:800 11px/12px sans-serif;text-align:center">!</span> 사고다발지 <span class="soon" id="n-acc"></span></label>
     <p class="note">보안등·CCTV·사고다발지는 처음에는 숨겨져 있습니다. 도로 구간을 누르면 그 구간 점수에 쓰인 점이 지도에 나타납니다. 위 체크박스를 켜면 전체를 볼 수 있습니다.</p>
 
