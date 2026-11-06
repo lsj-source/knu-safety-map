@@ -1,4 +1,7 @@
 {
   "buildCommand": "node scripts/make-config.mjs",
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "functions": {
+    "api/explain.js": { "maxDuration": 30 }
+  }
 }

@@ -58,6 +58,28 @@
   .mk-pin { font: 700 12px sans-serif; padding: 3px 9px; border-radius: 12px; white-space: nowrap; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); pointer-events: none; transform: translateY(-16px); }
   .mk-pin.s { background: #111827; } .mk-pin.e { background: #1d4ed8; }
   .legend-row svg { flex: none; }
+  .ai-text { font-size: 13.5px; line-height: 1.65; margin: 4px 0 6px; }
+  #ai-answer { background: #f1f5ff; border: 1px solid #c7d7fb; border-radius: 8px; padding: 8px 10px; }
+  #ai-answer .tag { display: inline-block; vertical-align: 1px; font-size: 11.5px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 4px; padding: 0 6px; margin-right: 6px; }
+  #ai-answer .tag.base { background: #64748b; }
+  .ai-sum { list-style: none; margin: 4px 0 2px; padding: 0; }
+  .ai-sum li { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; font-size: 14.5px; line-height: 1.5; border-bottom: 1px solid var(--line); }
+  .ai-sum li:last-child { border-bottom: 0; }
+  .ai-sum b { flex: none; min-width: 30px; font-size: 12.5px; color: #15803d; }
+  @media (prefers-color-scheme: dark) { .ai-sum b { color: #4ade80; } }
+  #ai-box { margin: 6px 0 2px; padding: 2px 0 6px; border-bottom: 1px solid var(--line); }
+  #ai-box h2 { margin-top: 10px; }
+  button:disabled { opacity: .55; cursor: wait; }
+  @media (prefers-color-scheme: dark) { #ai-answer { background: #1c2438; border-color: #33406b; } }
+  .view-btn { width: 100%; margin: 8px 0 4px; background: #16a34a; border-color: #16a34a; color: #fff; font-weight: 700; min-height: 44px; }
+  .view-btn:hover { border-color: #166534; background: #15803d; }
+  .simple-main { font-size: 22px; font-weight: 700; margin: 6px 0 2px; }
+  /* 경로 주변 점의 소속 구분: 추천 경로 구간 = 초록 실선 테두리, 최단 경로에만 해당 = 검은 점선 테두리 */
+  .mk.ring-rec { outline: 3px solid #16a34a; outline-offset: 1px; }
+  .mk.ring-sh { outline: 2px dashed #111; outline-offset: 2px; }
+  .ring-key { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 1.5px solid #1f2937; vertical-align: -2px; margin-right: 6px; }
+  .ring-key.rec { outline: 3px solid #16a34a; outline-offset: 1px; }
+  .ring-key.sh { outline: 2px dashed #111; outline-offset: 2px; }
   .rp-row { display: flex; flex-wrap: wrap; gap: 0 16px; }
   .mk-arrow { width: 18px; height: 18px; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
   #cmp-msg { font-size: 13px; margin: 6px 0; }
@@ -109,6 +131,17 @@
       <h2>두 길 비교</h2>
       <div id="cmp-msg"></div>
       <button type="button" class="btn" id="btn-redo" style="margin-top:0" hidden>다시 고르기</button>
+      <div id="view-toggle" hidden>
+        <button type="button" class="btn view-btn" id="btn-view">간단히 보기</button>
+      </div>
+      <!-- AI 설명: [간단히/자세히 보기] 버튼 바로 아래. 기본 설명(규칙으로 만든 문장)은 바로 보이고, AI 설명은 버튼을 눌렀을 때 만든다. -->
+      <div id="ai-box" hidden>
+        <h2>왜 이 길을 추천했을까요?</h2>
+        <ul id="ai-summary" class="ai-sum"></ul>
+        <div class="note" style="margin:2px 0 4px">안전을 보장하는 점수는 아니에요.</div>
+        <button type="button" class="btn" id="btn-ai">더 자세히 알아보기</button>
+        <div id="ai-answer" class="ai-text" aria-live="polite" hidden></div>
+      </div>
       <div id="route-pts" hidden>
         <div class="note" style="margin:0">경로 주변 점 표시</div>
         <div class="rp-row">
@@ -116,6 +149,7 @@
           <label class="row"><input type="checkbox" id="rp-light" checked> <span class="dot" style="width:11px;height:11px;background:#fff;border:2px solid #1f2937"></span> 보안등</label>
           <label class="row"><input type="checkbox" id="rp-cctv" checked> <span class="dot" style="width:12px;height:12px;border-radius:2px;background:#0f172a;border:2px solid #fff;box-shadow:0 0 0 1px #0f172a"></span> CCTV</label>
         </div>
+        <div class="note" style="margin:2px 0 6px 2px"><span class="ring-key rec"></span> 추천 경로 구간의 점 &nbsp; <span class="ring-key sh" style="margin-left:4px"></span> 최단 경로에만 해당하는 점</div>
       </div>
       <div id="cmp"></div>
     </div>
@@ -221,7 +255,8 @@ function init() {
   let selected = null, shapeClickAt = 0;
   let picked = null;                                   // 지금 선택한 구간 { f, near } — 표시 설정을 바꿨을 때 근거 점을 다시 그리기 위함
   const ui = { ev: true, near: true };                 // 근거 점 표시 여부, 근처 점(점수에 안 쓰이는 점)도 보일지
-  const cmp = { on: false, start: null, end: null, layers: [], pins: [], dimmed: false }; // 두 길 비교 모드 상태
+  // 두 길 비교 모드 상태. view: 'detail'(자세히: 점수 색 띠·윤곽선·최단 점선·점, 기본) / 'simple'(간단히: 추천 경로 초록 선과 화살표만). 새 경로를 만들 때마다 detail로 돌아간다.
+  const cmp = { on: false, start: null, end: null, layers: [], pins: [], dimmed: false, view: 'detail', result: null };
 
   // 도로 구간은 "흰 테두리 선(casing) + 색 선" 두 겹으로 그려서 배경 지도 위에서 색이 또렷하게 보이게 함
   const STYLE = {
@@ -365,13 +400,14 @@ function init() {
     // ===== 두 길 비교 (route.js 사용) =====
     // 색칠: 두 경로가 지나는 모든 구간에 점수 색 띠(연하게)를 깔고, 그 위에 추천(안전) 경로(윤곽선 있는 초록 실선+화살표)와 최단 경로(검은 점선)를 올린다.
     const segById = new Map(geo.features.map(f => [f.properties.id, f.properties]));
-    const rg = Route.buildGraph(graph, segById), rctx = { segById, lights: pts.lights, cctv: pts.cctv };
+    const rg = Route.buildGraph(graph, segById), rctx = { segById, lights: pts.lights, cctv: pts.cctv, weights: pts.meta.weights, roadLabel: p => p.name || HW[p.hw] || p.hw };
     const cmpBtn = document.getElementById('btn-cmp'), cmpMsg = document.getElementById('cmp-msg'), cmpBox = document.getElementById('cmp');
     const say = (t, err) => { cmpMsg.textContent = t || ''; cmpMsg.className = err ? 'err' : ''; };
     const addCmp = (o, bucket = cmp.layers) => { o.setMap(map); bucket.push(o); return o; };
-    const dimSegments = on => { // 경로를 보여 주는 동안 기존 점수 색 도로는 흐리게
-      if (cmp.dimmed === on) return; cmp.dimmed = on;
-      groups.seg.forEach((o, i) => o.setOptions({ strokeOpacity: on ? (i % 2 ? 0.28 : 0.15) : (i % 2 ? 1 : 0.9) }));
+    const dimSegments = mode => { // 경로를 보여 주는 동안 기존 점수 색 도로를 흐리게('dim') 또는 안 보이게('hide'). false = 원래대로
+      if (cmp.dimmed === mode) return; cmp.dimmed = mode;
+      const op = { dim: [0.15, 0.28], hide: [0, 0], off: [0.9, 1] }[mode || 'off']; // [테두리, 색 선]
+      groups.seg.forEach((o, i) => o.setOptions({ strokeOpacity: op[i % 2] }));
     };
     // 경로 주변 점: 두 경로의 구간에 반영된 보안등·CCTV(비교 표의 숫자와 같은 점)를 지도에 표시. 종류별로 켜고 끌 수 있다.
     const rpts = { light: [], cctv: [] }, rptsBox = document.getElementById('route-pts'), rptsOn = { light: true, cctv: true };
@@ -386,14 +422,29 @@ function init() {
       document.getElementById('rp-light').checked = document.getElementById('rp-cctv').checked = e.target.checked;
       applyRoutePts(); syncAll();
     });
+    // 각 점이 어느 경로 구간에 반영됐는지로 테두리를 구분한다: 추천 경로 구간 소속 = 초록 실선 테두리, 최단 경로에만 해당 = 검은 점선 테두리.
+    // 소속 구간: 이 점을 반영한 구간(li/ci) 중 두 경로가 지나는 구간에서 점과 가장 가까운 구간
+    const featById = new Map(geo.features.map(f => [f.properties.id, f])), segLineCache = new Map();
+    const segLine = sid => { let l = segLineCache.get(sid); if (!l) { l = featById.get(sid).geometry.coordinates.map(([lon, lat]) => toXY(lat, lon)); segLineCache.set(sid, l); } return l; };
     function drawRoutePoints(r) {
-      const sids = new Set([...r.shortest.edges, ...r.safe.edges].map(e => e.sid)), li = new Set(), ci = new Set();
-      sids.forEach(id => { const p = segById.get(id); p.li.forEach(i => li.add(i)); p.ci.forEach(i => ci.add(i)); });
-      li.forEach(i => rpts.light.push(dot(pts.lights[i][0], pts.lights[i][1], 'mk-light ev', { z: 9, title: '보안등 (경로 구간에 반영된 점)' })));
-      ci.forEach(i => { const c = pts.cctv[i]; rpts.cctv.push(dot(c[0], c[1], 'mk-cctv ev', { z: 9, title: `CCTV ${c[3]}대 · ${c[2]}${c[4] ? ' · 설치 ' + c[4] : ''}` })); });
+      const recSids = new Set(r.safe.edges.map(e => e.sid)), union = new Set([...r.shortest.edges.map(e => e.sid), ...recSids]);
+      const owner = { li: new Map(), ci: new Map() }; // 점 번호 → 소속 구간 id
+      for (const sid of union) {
+        const p = segById.get(sid);
+        for (const [key, list, pos] of [['li', p.li, pts.lights], ['ci', p.ci, pts.cctv]]) for (const i of list) {
+          const d = distToLine(toXY(pos[i][0], pos[i][1]), segLine(sid)), cur = owner[key].get(i);
+          if (!cur || d < cur.d) owner[key].set(i, { sid, d });
+        }
+      }
+      const ring = o => recSids.has(o.sid) ? ['ring-rec', '추천 경로 구간에 반영된 점'] : ['ring-sh', '최단 경로에만 해당하는 점'];
+      owner.li.forEach((o, i) => { const [cls, txt] = ring(o); rpts.light.push(dot(pts.lights[i][0], pts.lights[i][1], 'mk-light ev ' + cls, { z: 9, title: `보안등 · ${txt}` })); });
+      owner.ci.forEach((o, i) => { const c = pts.cctv[i], [cls, txt] = ring(o); rpts.cctv.push(dot(c[0], c[1], 'mk-cctv ev ' + cls, { z: 9, title: `CCTV ${c[3]}대 · ${c[2]}${c[4] ? ' · 설치 ' + c[4] : ''} · ${txt}` })); });
       applyRoutePts(); rptsBox.hidden = false;
     }
-    const clearRoutes = () => { cmp.layers.forEach(o => o.setMap(null)); cmp.layers.length = 0; Object.keys(rpts).forEach(k => { rpts[k].forEach(o => o.setMap(null)); rpts[k].length = 0; }); rptsBox.hidden = true; cmpBox.innerHTML = ''; dimSegments(false); };
+    const viewBox = document.getElementById('view-toggle');
+    const clearRouteLayers = () => { cmp.layers.forEach(o => o.setMap(null)); cmp.layers.length = 0; Object.keys(rpts).forEach(k => { rpts[k].forEach(o => o.setMap(null)); rpts[k].length = 0; }); rptsBox.hidden = true; };
+    const aiBox = document.getElementById('ai-box'), aiAnswer = document.getElementById('ai-answer');
+    const clearRoutes = () => { clearRouteLayers(); cmp.result = null; cmp.facts = null; cmp.view = 'detail'; /* 새 경로는 항상 자세히 보기로 시작 */ viewBox.hidden = true; aiBox.hidden = true; aiAnswer.hidden = true; aiAnswer.innerHTML = ''; cmpBox.innerHTML = ''; dimSegments(false); };
     const clearPoints = () => { cmp.pins.forEach(o => o.setMap(null)); cmp.pins.length = 0; cmp.start = cmp.end = null; };
     const redoBtn = document.getElementById('btn-redo');
     const syncRedo = () => { redoBtn.hidden = !(cmp.on && cmp.start); }; // 출발지를 찍은 뒤부터 [다시 고르기] 표시
@@ -405,7 +456,7 @@ function init() {
       if (sn.dist > 2) addCmp(new kakao.maps.Polyline({ path: [L(sn.clickLat, sn.clickLon), L(sn.lat, sn.lon)], strokeColor: '#475569', strokeWeight: 2, strokeStyle: 'shortdot', strokeOpacity: 1, zIndex: 15 }), cmp.pins);
     }
 
-    function drawRoutes(r) {
+    function drawDetailLines(r) { // 자세히: 점수 색 띠 + 추천 경로(윤곽선) + 최단 경로(점선)
       const drawn = new Set(), runs = [], key = e => Math.min(e.a, e.b) + '-' + Math.max(e.a, e.b);
       for (const rt of [r.shortest, r.safe]) { // 같은 구간은 한 번만, 같은 도로(구간 id)가 이어지면 한 줄로 묶어 색 띠를 만든다
         let run = null;
@@ -427,7 +478,9 @@ function init() {
       });
       safeRuns.forEach(u => addCmp(new kakao.maps.Polyline({ path: P(u.path), strokeColor: colorOf(u.score), strokeWeight: 10, strokeOpacity: 1, strokeStyle: 'solid', zIndex: 13 })));
       addCmp(new kakao.maps.Polyline({ path: P(r.shortest.coords), strokeColor: '#111111', strokeWeight: 3, strokeOpacity: 1, strokeStyle: 'shortdash', zIndex: 14 }));
-      // 가는 방향 화살표 (약 100m마다, 최소 1개)
+    }
+
+    function drawArrows(r) { // 가는 방향 화살표 (약 100m마다, 최소 1개)
       const xy = r.safe.coords.map(([la, lo]) => Route.toXY(la, lo)), total = r.safe.len, step = Math.max(40, Math.min(100, total / 3));
       let acc = 0, nextAt = step / 2;
       for (let i = 1; i < xy.length; i++) {
@@ -441,12 +494,36 @@ function init() {
         }
         acc += d;
       }
-      const b = new kakao.maps.LatLngBounds(); [...r.shortest.coords, ...r.safe.coords].forEach(([la, lo]) => b.extend(L(la, lo)));
-      map.setBounds(b, 70, 70, 70, 70);
     }
 
+    function drawSimpleLine(r) { // 간단히: 추천 경로만 굵은 초록 선 (흰 테두리)
+      const path = r.safe.coords.map(([la, lo]) => L(la, lo));
+      addCmp(new kakao.maps.Polyline({ path, strokeColor: '#ffffff', strokeWeight: 14, strokeOpacity: 1, strokeStyle: 'solid', zIndex: 12 }));
+      addCmp(new kakao.maps.Polyline({ path, strokeColor: '#16a34a', strokeWeight: 9, strokeOpacity: 1, strokeStyle: 'solid', zIndex: 13 }));
+    }
+
+    function drawRoutes(r, { simple, fit } = {}) {
+      simple ? drawSimpleLine(r) : drawDetailLines(r);
+      drawArrows(r);
+      if (fit) { const b = new kakao.maps.LatLngBounds(); (simple ? r.safe.coords : [...r.shortest.coords, ...r.safe.coords]).forEach(([la, lo]) => b.extend(L(la, lo))); map.setBounds(b, 70, 70, 70, 70); }
+    }
+
+    // 현재 보기(cmp.view)에 맞게 경로·점·결과 표를 (다시) 그린다. fit: 처음 만들 때만 지도를 경로에 맞춘다
+    function showResult(fit) {
+      const r = cmp.result; if (!r) return;
+      const simple = cmp.view === 'simple';
+      clearRouteLayers();
+      dimSegments(simple ? 'hide' : 'dim');
+      drawRoutes(r, { simple, fit });
+      if (!simple) drawRoutePoints(r);
+      renderResult(r, simple);
+      viewBox.hidden = false;
+      document.getElementById('btn-view').textContent = simple ? '자세히 보기' : '간단히 보기'; // 버튼 이름은 눌렀을 때 바뀔 보기
+    }
+    document.getElementById('btn-view').addEventListener('click', () => { cmp.view = cmp.view === 'simple' ? 'detail' : 'simple'; showResult(false); document.querySelector('aside').scrollTop = 0; });
+
     const fmt = { m: v => Math.round(v).toLocaleString() + 'm', min: v => Math.max(1, Math.round(v)) + '분', sc: v => v.toFixed(1) + '점', pct: v => Math.round(v * 100) + '%' };
-    function renderResult(r) {
+    function renderResult(r, simple) {
       const S = Route.summarize(r.shortest, rctx), F = Route.summarize(r.safe, rctx);
       const rows = [ // [이름, 값 만들기, 더 좋은 쪽 (low/high/null)]
         ['거리', s => fmt.m(s.distanceM), 'low'], ['걷는 시간 (4km/h)', s => '약 ' + fmt.min(s.minutes), 'low'],
@@ -465,15 +542,56 @@ function init() {
       const warns = [];
       if (r.warnings.includes('detour')) warns.push(`추천 경로가 최단 경로보다 ${Math.round((r.detour - 1) * 100)}% 더 멉니다(기준 ${Math.round((rg.opts.detourCap - 1) * 100)}%). 감수할 만한지 판단해 주세요.`);
       if (r.warnings.includes('steps')) warns.push(`추천 경로에 계단 구간이 약 ${Math.round(F.stepsLenM)}m 포함되어 있습니다.`);
-      let summary;
-      if (r.same) summary = '점수를 고려해도 최단 경로가 바뀌지 않았습니다. 두 경로가 같은 길입니다.';
-      else { const dm = F.distanceM - S.distanceM, ds = S.avgScore - F.avgScore; summary = `추천 경로는 최단 경로보다 ${Math.round(dm)}m(${Math.round(dm / S.distanceM * 100)}%) 더 걷고, 평균 점수가 ${ds.toFixed(1)}점 낮습니다.`; }
+      if (simple) { // 간단히: 가야 할 길(초록 선)과 핵심 숫자만
+        cmpBox.innerHTML = `<div class="simple-main">약 ${fmt.min(F.minutes)} · ${fmt.m(F.distanceM)}</div>
+          <div class="note" style="margin:0 0 6px;font-size:13px;color:var(--fg)">초록 선을 따라 화살표 방향으로 가세요.</div>
+          ${warns.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('')}
+          <div class="note">점수·보안등·CCTV 등 자세한 비교는 위의 [자세히 보기] 버튼을 누르세요.</div>`;
+        return;
+      }
       const accs = [...new Set([...S.accidents, ...F.accidents])];
-      cmpBox.innerHTML = `<div class="note" style="margin:0 0 4px;font-size:13px;color:var(--fg)">${esc(summary)}</div>${warns.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('')}
+      cmpBox.innerHTML = `${warns.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('')}
         <table class="cmp"><tr><th></th>${head}</tr>${body}</table>${accs.length ? `<div class="note">근처 사고다발지: ${accs.map(esc).join(', ')}</div>` : ''}
         <div style="margin-top:8px">${legend}</div>
         <div class="note">추천 경로는 "보행 주의 점수"가 더 낮은 길을 고른 것으로, 안전을 보장하지 않습니다. 횡단보도·보도 유무와 시간대별 통행량은 반영되지 않았습니다. 보안등·CCTV 수는 각 경로 구간에 반영된 점을 중복 없이 센 값이고, 지도의 점은 두 경로 구간에 반영된 점을 합쳐 보여 줍니다.</div>`;
     }
+
+    // ===== AI 설명 =====
+    // 두 경로 중 추천 경로가 정해진 "이유"를 보여 준다.
+    //  - 기본: 3줄 요약(이유·거리·주의). 계산 결과로 규칙에 따라 만든 짧은 문장이라 AI 없이 바로 나온다.
+    //  - [더 자세히 알아보기]를 눌렀을 때만 서버(/api/explain)에서 AI 설명을 받아 보여 준다 (무료 한도 보호).
+    //    AI를 쓸 수 없으면 같은 숫자로 만든 규칙 기반 자세한 설명(templateText)을 대신 보여 주고, 버튼으로 다시 시도할 수 있다.
+    // 숫자는 모두 여기서 계산한 facts를 보내고, AI는 그 값을 문장으로 풀어 쓸 뿐이다. 서버가 숫자·단정 표현을 검사해 이상하면 버린다.
+    const aiBtn = document.getElementById('btn-ai'), aiSummary = document.getElementById('ai-summary');
+    let aiBusy = false, aiSource = null; // aiSource: null(아직 못 받음, 또는 AI 실패) / 'ai'(AI 설명을 받음 → 이후 버튼은 접기/펼치기)
+    const tag = (cls, text) => `<span class="tag${cls ? ' ' + cls : ''}">${text}</span>`;
+    function initAi(r) {
+      cmp.facts = Route.buildFacts(r, rctx);
+      aiSummary.innerHTML = Route.summaryLines(cmp.facts).map(l => `<li><b>${esc(l.label)}</b><span>${esc(l.text)}</span></li>`).join('');
+      aiSource = null; aiBtn.textContent = '더 자세히 알아보기'; aiBtn.disabled = false;
+      aiBox.hidden = false; aiAnswer.hidden = true; aiAnswer.innerHTML = '';
+    }
+    async function askAi() {
+      if (aiBusy || !cmp.facts) return;
+      if (aiSource === 'ai') { // 이미 받았으면 접기/펼치기만
+        aiAnswer.hidden = !aiAnswer.hidden; aiBtn.textContent = aiAnswer.hidden ? '자세한 설명 다시 보기' : '접기'; return;
+      }
+      aiBusy = true; aiBtn.disabled = true;
+      aiAnswer.hidden = false; aiAnswer.innerHTML = '<span class="soon">설명을 만드는 중입니다… (AI 응답은 최대 30초)</span>';
+      let data = null;
+      try {
+        const res = await fetch('api/explain', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ facts: cmp.facts }), signal: AbortSignal.timeout(30000) });
+        data = await res.json();
+      } catch (e) { data = null; }
+      if (data && data.answer) { aiSource = 'ai'; aiAnswer.innerHTML = tag('', 'AI 설명') + esc(data.answer); aiBtn.textContent = '접기'; }
+      else {
+        const why = data && data.reason === 'rate-limit' ? '요청이 너무 잦아 AI는 잠시 쉬는 중이에요.' : 'AI를 지금 쓸 수 없어요.';
+        aiAnswer.innerHTML = tag('base', '자세한 설명') + esc(Route.templateText(cmp.facts)) + `<div class="note" style="margin-top:4px">${esc(why)} 계산 결과로 만든 설명을 보여 드려요.${data && data.reason ? ` <span class="soon">(${esc(data.reason)})</span>` : ''}</div>`;
+        aiBtn.textContent = 'AI 설명 다시 시도'; // 실패했을 때만: aiSource는 null로 두어 다시 누르면 서버를 다시 부른다
+      }
+      aiBusy = false; aiBtn.disabled = false;
+    }
+    aiBtn.addEventListener('click', askAi);
 
     // 패널 전환: 길 비교를 시작하면 비교 전용 패널만, 끝내면 기본 패널만 보인다
     function startCompare() { cmp.on = true; clearSelection(); infoWindow.close(); setPanel('route'); say('지도에서 출발지를 누르세요. 도로 가까이(60m 이내)를 누르면 가장 가까운 도로에 붙습니다.'); }
@@ -491,7 +609,7 @@ function init() {
       if (!cmp.start) { cmp.start = sn; drawPin(sn, '출발', 's'); syncRedo(); say('도착지를 누르세요.'); return; }
       const r = Route.findRoutes(rg, cmp.start, sn);
       if (!r.ok) return say(r.reason === 'same-point' ? '출발지와 같은 곳입니다. 다른 곳을 도착지로 눌러 주세요.' : '두 지점이 도로로 이어져 있지 않아 경로를 만들 수 없습니다. 다른 곳을 눌러 주세요.', true);
-      cmp.end = sn; drawPin(sn, '도착', 'e'); dimSegments(true); drawRoutes(r); drawRoutePoints(r); renderResult(r);
+      cmp.end = sn; drawPin(sn, '도착', 'e'); cmp.result = r; showResult(true); initAi(r);
       say('새로 고르려면 [다시 고르기]를 누르세요.');
     }
 
