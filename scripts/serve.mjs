@@ -11,8 +11,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.argv[2]) || 5173;
-const TYPES = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.geojson': 'application/json', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
-const PUBLIC = new Set(['index.html', 'config.js', 'route.js', 'data/risk_segments.geojson', 'data/points.json', 'data/graph.json']); // 원본 CSV와 .env는 제공하지 않음
+const TYPES = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.geojson': 'application/json', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
+const PUBLIC = new Set(['index.html', 'help.html', 'config.js', 'route.js', 'data/risk_segments.geojson', 'data/points.json', 'data/graph.json']); // 원본 CSV와 .env는 제공하지 않음
+const isPublic = p => PUBLIC.has(p) || /^help\/[\w.-]+\.(jpg|png|webp)$/.test(p); // help/ 폴더의 사용법 이미지
 const require = createRequire(import.meta.url);
 
 try { // .env 읽기 (KEY=VALUE 한 줄씩)
@@ -36,7 +37,7 @@ function runApi(req, res) { // Vercel 서버 함수와 같은 모양(req.body, r
 http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/+/, '') || 'index.html';
   if (p === 'api/explain') return runApi(req, res);
-  if (!PUBLIC.has(p)) { res.writeHead(404); res.end('not found'); return; }
+  if (!isPublic(p)) { res.writeHead(404); res.end('not found'); return; }
   fs.readFile(path.join(ROOT, p), (err, buf) => {
     if (err) { res.writeHead(404); res.end('not found'); return; }
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(p)] || 'application/octet-stream', 'Cache-Control': 'no-store' });

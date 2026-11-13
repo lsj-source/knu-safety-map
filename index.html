@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>경남대 주변 보행 안전 지도</title>
+<script>
+  // 처음 앱을 열면 사용법 페이지(help.html)를 먼저 보여 준다. 같은 탭에서는 한 번만 보내서, 사용법에서 [지도 보러 가기]로 돌아와도 다시 가지 않는다.
+  // help.html 마지막 단계의 "다음부터 자동으로 보지 않기"를 체크하면 이 브라우저에서는 자동으로 보내지 않는다(기본은 체크 해제).
+  (function () {
+    try {
+      if (location.protocol === 'file:') return;
+      if (localStorage.getItem('knu-safety-map-help-hide') === '1' || sessionStorage.getItem('knu-safety-map-help-seen') === '1') return;
+      sessionStorage.setItem('knu-safety-map-help-seen', '1');
+      location.replace('help.html');
+    } catch (e) { /* 저장소를 쓸 수 없으면 지도를 그대로 보여 준다 */ }
+  })();
+</script>
 <style>
   :root {
     /* CCTV 카메라 아이콘 (SVG를 CSS 변수로): 진한 = 점수에 쓰이는 CCTV, 회색 = 점수 제외 CCTV, 속 빈 = 근처 점(점수에 안 쓰임) */
@@ -102,6 +114,9 @@
   .mk-campus { background: #1d4ed8; color: #fff; font: 600 12px sans-serif; padding: 3px 8px; border-radius: 12px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,.4); pointer-events: none; }
   .iw { padding: 8px 12px; font-size: 13px; line-height: 1.5; color: #1f2430; width: 290px; white-space: normal; overflow-wrap: anywhere; box-sizing: content-box; }
   .iw .sub { color: #646b7a; }
+  /* 헤더의 [? 사용법] 링크, 패널의 [사용법 보기] 버튼 */
+  .help-btn { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; margin: 0 0 12px; text-decoration: none; color: var(--accent); border-color: var(--accent); font-weight: 700; }
+  header .hq { margin-left: auto; display: inline-flex; align-items: center; font: inherit; font-size: 12.5px; padding: 4px 12px; min-height: 32px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--accent); text-decoration: none; }
   /* 휴대폰: 지도를 위에 크게, 패널은 아래에서 스크롤. 손가락으로 누르기 쉽게 버튼·체크박스를 키움 */
   @media (max-width: 720px) {
     html, body { height: 100vh; height: 100dvh; }
@@ -117,6 +132,7 @@
     table.cmp, table.w { font-size: 13px; }
     table.cmp th, table.cmp td { padding: 6px 0; }
     .iw { width: 240px; }
+    header .hq { min-height: 36px; }
   }
   @media (pointer: coarse) { .mk-light { pointer-events: none; } }
   /* 범례(오른쪽 패널) 아이콘: 지도의 모양과 같게 */
@@ -124,6 +140,8 @@
   .ic-cctv, .ic-cctv2, .ic-cctv-hollow { display: inline-block; flex: none; width: 21px; height: 17px; background: var(--cam-dark) center / 100% 100% no-repeat; }
   .ic-cctv2 { background-image: var(--cam-gray); }
   .ic-cctv-hollow { background-image: var(--cam-hollow); }
+  .ic-cctv-hollow-other { display: inline-block; flex: none; width: 21px; height: 17px; background: var(--cam-hollow-other) center / 100% 100% no-repeat; }
+  .ic-light-hollow { display: inline-block; flex: none; width: 12px; height: 12px; margin: 0 5px 0 3px; border-radius: 50%; border: 2px dashed #64748b; }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #151821; --fg: #e6e8ee; --muted: #9aa1b2; --line: #2b3040; }
     .meter { background: #2b3040; }
@@ -134,20 +152,21 @@
 <header>
   <h1>경남대 주변 보행 안전 지도</h1>
   <span>구간별 "보행 주의" 점수 · 환경 기반 지표(프로토타입)</span>
+  <a class="hq" id="btn-tour" href="help.html">? 사용법</a>
 </header>
 <main>
   <div id="map" aria-label="경남대학교 주변 보행 안전 지도"><div id="map-error"></div></div>
   <aside>
-    <!-- 패널 2: 두 길 비교 (길 비교를 시작하면 이것만 보인다) -->
+    <!-- 패널 2: 안전한 길 찾기 (시작하면 이것만 보인다) -->
     <div id="panel-route" hidden>
       <button type="button" class="btn" id="btn-cmp-end" style="margin-top:0">← 지도 보기로 돌아가기</button>
-      <h2>두 길 비교</h2>
+      <h2>안전한 길 찾기</h2>
       <div id="cmp-msg"></div>
       <button type="button" class="btn" id="btn-redo" style="margin-top:0" hidden>다시 고르기</button>
       <div id="view-toggle" hidden>
-        <button type="button" class="btn view-btn" id="btn-view">간단히 보기</button>
+        <button type="button" class="btn view-btn" id="btn-view">안전성 확인하기</button>
       </div>
-      <!-- AI 설명: [간단히/자세히 보기] 버튼 바로 아래. 기본 설명(규칙으로 만든 문장)은 바로 보이고, AI 설명은 버튼을 눌렀을 때 만든다. -->
+      <!-- AI 설명: [안전성 확인하기/뒤로 가기] 버튼 바로 아래. 기본 설명(규칙으로 만든 문장)은 바로 보이고, AI 설명은 버튼을 눌렀을 때 만든다. -->
       <div id="ai-box" hidden>
         <h2>왜 이 길을 추천했을까요?</h2>
         <ul id="ai-summary" class="ai-sum"></ul>
@@ -156,13 +175,14 @@
         <div id="ai-answer" class="ai-text" aria-live="polite" hidden></div>
       </div>
       <div id="route-pts" hidden>
-        <div class="note" style="margin:0">경로 주변 점 표시</div>
+        <div class="note" style="margin:0">경로 주변 보안등·CCTV 표시</div>
         <div class="rp-row">
           <label class="row"><input type="checkbox" id="rp-all" checked> <b>전체</b></label>
           <label class="row"><input type="checkbox" id="rp-light" checked> <span class="ic-light"></span> 보안등</label>
           <label class="row"><input type="checkbox" id="rp-cctv" checked> <span class="ic-cctv"></span> CCTV</label>
         </div>
-        <div class="note" style="margin:2px 0 6px 2px"><span class="ring-key rec"></span> 추천 경로 구간의 점 &nbsp; <span class="ring-key sh" style="margin-left:4px"></span> 최단 경로에만 해당하는 점</div>
+        <div class="legend-row" style="margin-top:2px"><span class="ring-key rec" style="margin:0 8px 0 5px"></span><span>초록 테두리 = 추천 경로 구간의 점</span></div>
+        <div class="legend-row" style="margin-bottom:6px"><span class="ring-key sh" style="margin:0 8px 0 5px"></span><span>점선 테두리 = 최단 경로에만 해당하는 점</span></div>
       </div>
       <div id="cmp"></div>
     </div>
@@ -178,35 +198,38 @@
       <p class="note">점수 = 항목별 주의도(0~1)의 가중 평균 × 100. 위 막대는 이 구간의 항목별 주의도이고, 높을수록 걸을 때 더 주의가 필요한 환경이라는 뜻입니다. 범죄나 사고 발생을 단정하지 않습니다.</p>
 
       <h2>지도에 보이는 점</h2>
-      <div class="legend-row"><span class="ic-cctv"></span> 진한 모양 = 이 도로에 반영된 점 (점수에 쓰임)</div>
-      <div class="legend-row"><span class="ic-cctv-hollow"></span> 속 빈 모양 = 근처 점 (다른 도로 소속, <b>점수에 안 쓰임</b>)</div>
+      <div class="legend-row"><span class="ic-light"></span><span class="ic-cctv"></span><span>진한 모양 = 이 구간 점수에 반영된 점</span></div>
+      <div class="legend-row"><span class="ic-light-hollow"></span><span class="ic-cctv-hollow"></span><span>속 빈 모양 = 근처에 있지만 다른 도로 소속이라 <b>점수에 반영되지 않은</b> 점</span></div>
+      <div class="legend-row"><span class="ic-cctv-hollow-other"></span><span>점선 카메라 = 점수에서 뺀 용도(교통단속 등)의 CCTV</span></div>
       <label class="row"><input type="checkbox" id="o-near" checked> 근처 CCTV·보안등도 함께 보기</label>
       <button type="button" class="btn" id="btn-ev">근거 점 숨기기</button>
     </div>
 
     <!-- 패널 1: 기본 (전체 보기: 비교 시작, 레이어, 범례, 계산식, 출처) -->
     <div id="panel-main">
-    <h2>두 길 비교</h2>
-    <p class="note" style="margin:0 0 4px">출발지와 도착지를 골라 최단 경로와 보행 주의 점수가 더 낮은 경로를 비교합니다.</p>
-    <button type="button" class="btn" id="btn-cmp" style="margin-top:0">두 길 비교 시작</button>
+    <a class="btn help-btn" id="btn-help" href="help.html">사용법 보기</a>
+    <h2>안전한 길 찾기</h2>
+    <p class="note" style="margin:0 0 4px">출발지와 도착지를 골라 보행 주의 점수가 더 낮은 길을 찾아 드려요.</p>
+    <button type="button" class="btn" id="btn-cmp" style="margin-top:0">안전한 길 찾기 시작</button>
 
     <h2>도로 구간 점수 근거</h2>
     <p class="note" style="margin:0">지도에서 도로 구간을 누르면 점수 근거와 그 구간에 반영된 보안등·CCTV 위치가 나타납니다.</p>
 
     <h2>표시할 레이어</h2>
-    <label class="row"><input type="checkbox" id="l-seg" checked> 도로 구간 점수</label>
+    <label class="row"><input type="checkbox" id="l-seg" checked> 도로 구간 점수 색</label>
     <label class="row"><input type="checkbox" id="l-light" checked> <span class="ic-light"></span> 보안등 <span class="soon" id="n-light"></span></label>
-    <label class="row"><input type="checkbox" id="l-cctv" checked> <span class="ic-cctv"></span> CCTV(방범·어린이보호) <span class="soon" id="n-cctv"></span></label>
-    <label class="row"><input type="checkbox" id="l-cctv2"> <span class="ic-cctv2"></span> CCTV(그 외, 점수 제외) <span class="soon" id="n-cctv2"></span></label>
+    <label class="row"><input type="checkbox" id="l-cctv" checked> <span class="ic-cctv"></span> CCTV (방범·어린이보호) <span class="soon" id="n-cctv"></span></label>
+    <label class="row"><input type="checkbox" id="l-cctv2"> <span class="ic-cctv2"></span> CCTV (그 외, 점수 제외) <span class="soon" id="n-cctv2"></span></label>
     <label class="row"><input type="checkbox" id="l-acc"> <span class="dot" style="width:16px;height:16px;background:#e6007e;border:2px solid #fff;box-shadow:0 0 0 1px #e6007e;color:#fff;font:800 11px/12px sans-serif;text-align:center">!</span> 사고다발지 <span class="soon" id="n-acc"></span></label>
-    <p class="note">보안등·CCTV·사고다발지는 처음에는 숨겨져 있습니다. 도로 구간을 누르면 그 구간 점수에 쓰인 점이 지도에 나타납니다. 위 체크박스를 켜면 전체를 볼 수 있습니다.</p>
+    <p class="note">점수에 쓰이는 점을 지도에서 볼 수 있어요. 처음에는 꺼져 있고, 도로 구간을 누르면 그 구간에 쓰인 점만 나타나요. 체크하면 전체가 보여요.</p>
 
-    <h2>보행 주의 점수</h2>
+    <h2>보행 주의 점수 (0~100)</h2>
     <div class="legend-row"><span class="bar" style="background:var(--s1)"></span> 0–19 낮음</div>
-    <div class="legend-row"><span class="bar" style="background:var(--s2)"></span> 20–39</div>
-    <div class="legend-row"><span class="bar" style="background:var(--s3)"></span> 40–59</div>
-    <div class="legend-row"><span class="bar" style="background:var(--s4)"></span> 60–79</div>
-    <div class="legend-row"><span class="bar" style="background:var(--s5)"></span> 80–100 높음</div>
+    <div class="legend-row"><span class="bar" style="background:var(--s2)"></span> 20–39 약간 낮음</div>
+    <div class="legend-row"><span class="bar" style="background:var(--s3)"></span> 40–59 보통</div>
+    <div class="legend-row"><span class="bar" style="background:var(--s4)"></span> 60–79 높음</div>
+    <div class="legend-row"><span class="bar" style="background:var(--s5)"></span> 80–100 매우 높음</div>
+    <p class="note" style="margin:4px 0 0">숫자가 클수록 걸을 때 더 주의가 필요한 길이에요. 안전을 보장하는 점수는 아니에요.</p>
 
     <h2>점수 계산 (가중치)</h2>
     <table class="w" id="weights"></table>
@@ -218,6 +241,7 @@
     </div>
   </aside>
 </main>
+
 
 <!-- 카카오맵 JavaScript 키는 이 파일에 적지 않는다(공개 저장소). config.js가 KAKAO_JS_KEY를 정의한다.
      - 로컬: config.example.js를 config.js로 복사해 키를 넣는다 (config.js는 .gitignore로 저장소에 올라가지 않음)
@@ -268,8 +292,8 @@ function init() {
   let selected = null, shapeClickAt = 0;
   let picked = null;                                   // 지금 선택한 구간 { f, near } — 표시 설정을 바꿨을 때 근거 점을 다시 그리기 위함
   const ui = { ev: true, near: true };                 // 근거 점 표시 여부, 근처 점(점수에 안 쓰이는 점)도 보일지
-  // 두 길 비교 모드 상태. view: 'detail'(자세히: 점수 색 띠·윤곽선·최단 점선·점, 기본) / 'simple'(간단히: 추천 경로 초록 선과 화살표만). 새 경로를 만들 때마다 detail로 돌아간다.
-  const cmp = { on: false, start: null, end: null, layers: [], pins: [], dimmed: false, view: 'detail', result: null };
+  // 안전한 길 찾기 모드 상태. view: 'simple'(간단한 결과, 기본: 추천 경로 초록 선과 화살표만) / 'detail'(안전성 확인: 점수 색 띠·윤곽선·최단 점선·점·비교 표). 새 경로를 만들 때마다 simple로 돌아간다.
+  const cmp = { on: false, start: null, end: null, layers: [], pins: [], dimmed: false, view: 'simple', result: null };
 
   // 도로 구간은 "흰 테두리 선(casing) + 색 선" 두 겹으로 그려서 배경 지도 위에서 색이 또렷하게 보이게 함
   const STYLE = {
@@ -457,7 +481,7 @@ function init() {
     const viewBox = document.getElementById('view-toggle');
     const clearRouteLayers = () => { cmp.layers.forEach(o => o.setMap(null)); cmp.layers.length = 0; Object.keys(rpts).forEach(k => { rpts[k].forEach(o => o.setMap(null)); rpts[k].length = 0; }); rptsBox.hidden = true; };
     const aiBox = document.getElementById('ai-box'), aiAnswer = document.getElementById('ai-answer');
-    const clearRoutes = () => { clearRouteLayers(); cmp.result = null; cmp.facts = null; cmp.view = 'detail'; /* 새 경로는 항상 자세히 보기로 시작 */ viewBox.hidden = true; aiBox.hidden = true; aiAnswer.hidden = true; aiAnswer.innerHTML = ''; cmpBox.innerHTML = ''; dimSegments(false); };
+    const clearRoutes = () => { clearRouteLayers(); cmp.result = null; cmp.facts = null; cmp.view = 'simple'; /* 새 경로는 항상 간단한 결과로 시작 */ viewBox.hidden = true; aiBox.hidden = true; aiAnswer.hidden = true; aiAnswer.innerHTML = ''; cmpBox.innerHTML = ''; dimSegments(false); };
     const clearPoints = () => { cmp.pins.forEach(o => o.setMap(null)); cmp.pins.length = 0; cmp.start = cmp.end = null; };
     const redoBtn = document.getElementById('btn-redo');
     const syncRedo = () => { redoBtn.hidden = !(cmp.on && cmp.start); }; // 출발지를 찍은 뒤부터 [다시 고르기] 표시
@@ -531,9 +555,12 @@ function init() {
       if (!simple) drawRoutePoints(r);
       renderResult(r, simple);
       viewBox.hidden = false;
-      document.getElementById('btn-view').textContent = simple ? '자세히 보기' : '간단히 보기'; // 버튼 이름은 눌렀을 때 바뀔 보기
+      document.getElementById('btn-view').textContent = simple ? '안전성 확인하기' : '← 뒤로 가기'; // 간단한 결과 → [안전성 확인하기] → 자세한 화면 → [뒤로 가기] → 간단한 결과
+      // [더 자세히 알아보기](AI)는 안전성 확인 화면에서만 보인다. 간단한 결과에는 3줄 요약만 둔다.
+      aiBtn.hidden = simple; aiAnswer.hidden = simple || !aiAnswer.innerHTML;
     }
-    document.getElementById('btn-view').addEventListener('click', () => { cmp.view = cmp.view === 'simple' ? 'detail' : 'simple'; showResult(false); document.querySelector('aside').scrollTop = 0; });
+    // 보기를 바꾸면 지도도 그 보기의 경로에 맞춘다 (자세한 화면은 최단 경로까지 보이게)
+    document.getElementById('btn-view').addEventListener('click', () => { cmp.view = cmp.view === 'simple' ? 'detail' : 'simple'; showResult(true); document.querySelector('aside').scrollTop = 0; });
 
     const fmt = { m: v => Math.round(v).toLocaleString() + 'm', min: v => Math.max(1, Math.round(v)) + '분', sc: v => v.toFixed(1) + '점', pct: v => Math.round(v * 100) + '%' };
     function renderResult(r, simple) {
@@ -548,10 +575,10 @@ function init() {
       const cell = (name, mk, better, me, other) => { const f = val[name]; const win = !r.same && f && f(me) !== f(other) && (better === 'low' ? f(me) < f(other) : f(me) > f(other)); return `<td${win ? ' class="best"' : ''}>${esc(mk(me))}</td>`; };
       const head = r.same ? '<th>경로</th>' : '<th>최단</th><th>추천</th>';
       const body = rows.map(([name, mk, better]) => `<tr><td>${name}</td>${r.same ? `<td>${esc(mk(S))}</td>` : cell(name, mk, better, S, F) + cell(name, mk, better, F, S)}</tr>`).join('');
-      const legend = `<div class="legend-row"><svg width="34" height="16"><line x1="0" y1="8" x2="34" y2="8" stroke="#064e2b" stroke-width="16"/><line x1="0" y1="8" x2="11" y2="8" stroke="#f2d544" stroke-width="10"/><line x1="11" y1="8" x2="23" y2="8" stroke="#f28c28" stroke-width="10"/><line x1="23" y1="8" x2="34" y2="8" stroke="#2f6fb5" stroke-width="10"/></svg> <span><b>추천 경로</b> (보행 주의 점수가 더 낮은 길, 화살표 방향으로 이동). 초록 윤곽선 안의 색 = 구간 점수</span></div>
-        <div class="legend-row"><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="#111" stroke-width="3" stroke-dasharray="7 4"/></svg> 최단 경로 (참고용)</div>
-        <div class="legend-row"><span style="display:inline-flex;width:34px;height:8px;opacity:.8">${COLORS.map(c => `<i style="flex:1;background:${c}"></i>`).join('')}</span> 색 = 구간의 보행 주의 점수 (최단 경로만 지나는 구간은 연한 띠)</div>
-        <div class="note" style="margin:0 0 0 42px">${COLORS.map((c, i) => `<span style="white-space:nowrap"><span class="dot" style="width:9px;height:9px;background:${c}"></span> ${['0–19 낮음', '20–39', '40–59', '60–79', '80–100 높음'][i]}</span>`).join(' &nbsp;')}</div>`;
+      const legend = `<div class="legend-row"><svg width="34" height="16"><line x1="0" y1="8" x2="34" y2="8" stroke="#064e2b" stroke-width="16"/><line x1="0" y1="8" x2="11" y2="8" stroke="#f2d544" stroke-width="10"/><line x1="11" y1="8" x2="23" y2="8" stroke="#f28c28" stroke-width="10"/><line x1="23" y1="8" x2="34" y2="8" stroke="#2f6fb5" stroke-width="10"/></svg> <span><b>추천 경로</b> = 점수가 더 낮은 길 (초록 윤곽선, 화살표 방향으로 가세요)</span></div>
+        <div class="legend-row"><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="#111" stroke-width="3" stroke-dasharray="7 4"/></svg> <span><b>최단 경로</b> = 가장 짧은 길 (검은 점선)</span></div>
+        <div class="legend-row"><span style="display:inline-flex;width:34px;height:8px;opacity:.8;flex:none">${COLORS.map(c => `<i style="flex:1;background:${c}"></i>`).join('')}</span> <span>띠 색 = 구간의 보행 주의 점수 (최단 경로만 지나는 구간은 연하게)</span></div>
+        <div class="note" style="margin:0 0 0 42px">${COLORS.map((c, i) => `<span style="white-space:nowrap"><span class="dot" style="width:9px;height:9px;background:${c}"></span> ${['0–19', '20–39', '40–59', '60–79', '80–100'][i]}</span>`).join(' &nbsp;')} <span style="white-space:nowrap">(낮음 → 높음)</span></div>`;
       const warns = [];
       if (r.warnings.includes('detour')) warns.push(`추천 경로가 최단 경로보다 ${Math.round((r.detour - 1) * 100)}% 더 멉니다(기준 ${Math.round((rg.opts.detourCap - 1) * 100)}%). 감수할 만한지 판단해 주세요.`);
       if (r.warnings.includes('steps')) warns.push(`추천 경로에 계단 구간이 약 ${Math.round(F.stepsLenM)}m 포함되어 있습니다.`);
@@ -559,7 +586,7 @@ function init() {
         cmpBox.innerHTML = `<div class="simple-main">약 ${fmt.min(F.minutes)} · ${fmt.m(F.distanceM)}</div>
           <div class="note" style="margin:0 0 6px;font-size:13px;color:var(--fg)">초록 선을 따라 화살표 방향으로 가세요.</div>
           ${warns.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('')}
-          <div class="note">점수·보안등·CCTV 등 자세한 비교는 위의 [자세히 보기] 버튼을 누르세요.</div>`;
+          <div class="note">점수·보안등·CCTV 등 자세한 비교는 위의 [안전성 확인하기] 버튼을 누르세요.</div>`;
         return;
       }
       const accs = [...new Set([...S.accidents, ...F.accidents])];
@@ -606,7 +633,7 @@ function init() {
     }
     aiBtn.addEventListener('click', askAi);
 
-    // 패널 전환: 길 비교를 시작하면 비교 전용 패널만, 끝내면 기본 패널만 보인다
+    // 패널 전환: 길 찾기를 시작하면 길 찾기 전용 패널만, 끝내면 기본 패널만 보인다
     function startCompare() { cmp.on = true; clearSelection(); infoWindow.close(); setPanel('route'); say('지도에서 출발지를 누르세요. 도로 가까이(60m 이내)를 누르면 가장 가까운 도로에 붙습니다.'); }
     function stopCompare() { cmp.on = false; resetCompare(); say(''); setPanel('main'); }
     cmpBtn.addEventListener('click', startCompare);
@@ -676,10 +703,10 @@ function init() {
     }
     window.addEventListener('resize', () => map.relayout());
 
-    document.getElementById('n-light').textContent = `(${pts.lights.length}지점)`;
-    document.getElementById('n-cctv').textContent = `(${nUsed})`;
-    document.getElementById('n-cctv2').textContent = `(${nOther})`;
-    document.getElementById('n-acc').textContent = `(${pts.accidents.length})`;
+    document.getElementById('n-light').textContent = `· ${pts.lights.length.toLocaleString()}곳`; // 위치 기준 지점 수 (한 지점에 보안등이 여러 개일 수 있음)
+    document.getElementById('n-cctv').textContent = `· ${nUsed.toLocaleString()}곳`;
+    document.getElementById('n-cctv2').textContent = `· ${nOther.toLocaleString()}곳`;
+    document.getElementById('n-acc').textContent = `· ${pts.accidents.length.toLocaleString()}곳`;
 
     const w = pts.meta.weights;
     const weightRows = Object.keys(LABEL).map(k =>

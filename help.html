@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사용법 · 경남대 주변 보행 안전 지도</title>
+<style>
+  :root { --bg: #ffffff; --fg: #1f2430; --muted: #646b7a; --line: #dfe3ea; --accent: #1d4ed8; --soft: #f4f6f8; --mark: #ff3b30; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; color: var(--fg); background: var(--bg); line-height: 1.7; font-size: 16px; }
+  .top { flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .top b { font-size: 16px; }
+  .top .count { margin-left: auto; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .back { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--accent); text-decoration: none; font-size: 14px; background: var(--bg); }
+  .bar { flex: none; height: 4px; background: var(--soft); }
+  .bar i { display: block; height: 100%; width: 9.1%; background: var(--accent); transition: width .2s; }
+  .wrap { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 20px 16px 24px; touch-action: pan-y; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; padding: 0; list-style: none; }
+  .tabs button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 20px; background: var(--bg); color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; }
+  .tabs button:hover { border-color: var(--accent); }
+  .tabs i { font-style: normal; font-weight: 700; color: var(--accent); }
+  .tabs button[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  .tabs button[aria-current="step"] i { color: #fff; }
+  .step { display: none; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 32px; align-items: start; padding: 8px 0 8px; }
+  .step.on { display: grid; }
+  .grp { display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--accent); background: rgba(29,78,216,.1); border-radius: 12px; padding: 2px 12px; }
+  .step h2 { font-size: 24px; margin: 10px 0 10px; line-height: 1.4; }
+  .step h2 .no { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; margin-right: 8px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 17px; vertical-align: 2px; }
+  .step p { margin: 8px 0; }
+  .step ul { margin: 8px 0; padding-left: 20px; }
+  .step li { margin: 6px 0; }
+  .n { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin-right: 4px; border-radius: 50%; background: var(--mark); color: #fff; font-size: 13px; font-weight: 700; vertical-align: 1px; flex: none; }
+  .tip { margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; background: var(--soft); color: var(--muted); font-size: 14px; }
+  figure { margin: 0; }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+  figcaption { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .k { display: inline-block; vertical-align: -3px; margin: 0 4px 0 2px; }
+  .k.light { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #1f2937; box-shadow: 0 0 0 3px rgba(253,230,138,.9); margin: 0 7px 0 4px; }
+  .k.cctv { width: 22px; height: 18px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-11 -9 22 18'%3E%3Crect x='-9' y='-4.8' width='12.5' height='9.6' rx='2' fill='%230f172a' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M3.5 -3 L9.5 -6 L9.5 6 L3.5 3 Z' fill='%230f172a' stroke='white' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='-3' cy='0' r='2.3' fill='%2393c5fd'/%3E%3Cline x1='-9' y1='-4.8' x2='-9' y2='-8' stroke='%230f172a' stroke-width='2'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+  .k.acc { width: 18px; height: 18px; border-radius: 50%; background: #e6007e; border: 2px solid #fff; box-shadow: 0 0 0 1px #e6007e; color: #fff; font: 800 11px/14px sans-serif; text-align: center; }
+  .k.rec { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 1.5px solid #1f2937; outline: 3px solid #16a34a; outline-offset: 1px; margin: 0 8px 0 5px; }
+  .k.sh { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 1.5px solid #1f2937; outline: 2px dashed #111; outline-offset: 2px; margin: 0 8px 0 5px; }
+  .bars { display: flex; gap: 4px; margin: 10px 0; max-width: 340px; }
+  .bars i { flex: 1; height: 10px; }
+  .zoom { max-width: 620px; }
+  .done { margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+  .done .go { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 28px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 17px; font-weight: 700; text-decoration: none; }
+  .chk { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 8px; font-size: 14.5px; color: var(--muted); cursor: pointer; }
+  .chk input { width: 22px; height: 22px; flex: none; }
+  .note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  .nav { flex: none; position: sticky; bottom: 0; z-index: 10; display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line); }
+  .nb { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; min-width: 120px; padding: 0 28px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; text-decoration: none; cursor: pointer; }
+  .nb.p { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; min-width: 160px; }
+  .nb:disabled { visibility: hidden; }
+  .nb[hidden] { display: none; }
+  .hint { color: var(--muted); font-size: 13px; text-align: center; flex: 1; }
+  @media (max-width: 900px) {
+    .step { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    figure { max-width: 400px; margin: 0 auto; }
+    .step h2 { font-size: 22px; }
+    .tabs button { padding: 0 12px; min-height: 36px; font-size: 13px; }
+    .tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+    .tabs li { flex: none; }
+    .tabs .t { display: none; }
+    .tabs button[aria-current="step"] .t { display: inline; }
+    .nb { flex: 1; min-width: 0; }
+    .nb.p { flex: 2; }
+    .hint { display: none; }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151821; --fg: #e6e8ee; --muted: #9aa1b2; --line: #2b3040; --soft: #1b1f2a; }
+    .grp { background: rgba(120,160,255,.15); color: #9db8ff; }
+  }
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="back" href="./">← 지도로 돌아가기</a>
+  <b>사용법</b>
+  <span class="count" id="count">1 / 11</span>
+</div>
+<div class="bar" aria-hidden="true"><i id="bar"></i></div>
+
+<main class="wrap" id="main">
+  <ul class="tabs" id="tabs" aria-label="단계 바로가기">
+    <li><button type="button" data-i="0"><i>1</i><span class="t">점수 색</span></button></li>
+    <li><button type="button" data-i="1"><i>2</i><span class="t">도로 누르기</span></button></li>
+    <li><button type="button" data-i="2"><i>3</i><span class="t">레이어</span></button></li>
+    <li><button type="button" data-i="3"><i>4</i><span class="t">보안등</span></button></li>
+    <li><button type="button" data-i="4"><i>5</i><span class="t">CCTV</span></button></li>
+    <li><button type="button" data-i="5"><i>6</i><span class="t">사고다발지</span></button></li>
+    <li><button type="button" data-i="6"><i>7</i><span class="t">길 찾기 시작</span></button></li>
+    <li><button type="button" data-i="7"><i>8</i><span class="t">출발·도착</span></button></li>
+    <li><button type="button" data-i="8"><i>9</i><span class="t">결과 보기</span></button></li>
+    <li><button type="button" data-i="9"><i>10</i><span class="t">안전성 확인</span></button></li>
+    <li><button type="button" data-i="10"><i>11</i><span class="t">알아 두세요</span></button></li>
+  </ul>
+
+  <article class="step on" data-title="색은 보행 주의 점수예요">
+    <div>
+      <span class="grp">지도 보기</span>
+      <h2><span class="no">1</span>색은 보행 주의 점수예요</h2>
+      <p>도로의 색이 그 구간의 <b>보행 주의 점수(0~100)</b>예요. 그림의 <span class="n">1</span> 범례에서 단계별 색과 숫자를 볼 수 있어요.</p>
+      <div class="bars" aria-hidden="true"><i style="background:#2f6fb5"></i><i style="background:#f2d544"></i><i style="background:#f28c28"></i><i style="background:#d7301f"></i><i style="background:#5b1a5e"></i></div>
+      <ul>
+        <li><b>파랑·노랑</b>(0~39) 낮음·약간 낮음: 걸을 때 주의가 덜 필요한 길이에요.</li>
+        <li><b>주황</b>(40~59) 보통</li>
+        <li><b>빨강·보라</b>(60~100) 높음·매우 높음: 더 주의가 필요한 길이에요.</li>
+      </ul>
+      <p class="tip">점수가 높다고 위험한 길이라는 뜻은 아니에요. 보안등·CCTV가 적거나 사고다발지가 가까운 환경이라는 뜻이에요.</p>
+    </div>
+    <figure>
+      <picture><source media="(max-width: 900px)" srcset="help/m1.jpg"><img src="help/d1.jpg" width="1280" height="800" loading="lazy" alt="기본 화면. 오른쪽 패널의 보행 주의 점수 범례를 강조한 그림"></picture>
+      <figcaption>오른쪽(폰은 아래) 패널의 범례</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="도로를 눌러 근거를 보세요">
+    <div>
+      <span class="grp">지도 보기</span>
+      <h2><span class="no">2</span>도로를 눌러 근거를 보세요</h2>
+      <ul>
+        <li>지도에서 <span class="n">1</span> 도로 구간(약 50m)을 누르면, <span class="n">2</span> 그 구간의 <b>점수와 이유</b>가 나와요.</li>
+        <li>큰 숫자가 점수이고, 아래 막대는 <b>보안등, CCTV, 사고다발지 근접, 도로 등급</b> 항목별 점수예요. 막대가 길수록 그 항목 때문에 점수가 올라간 거예요.</li>
+        <li>그 구간에 반영된 보안등·CCTV가 지도에도 표시돼요.</li>
+        <li>지도의 빈 곳을 누르거나 [전체 보기로 돌아가기]를 누르면 닫혀요.</li>
+      </ul>
+    </div>
+    <figure>
+      <picture><source media="(max-width: 900px)" srcset="help/m2.jpg"><img src="help/d2.jpg" width="1280" height="800" loading="lazy" alt="도로 구간을 눌러 점수 카드가 나온 화면"></picture>
+      <figcaption>도로를 누르면 패널이 점수 카드로 바뀌어요</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="보안등·CCTV·사고다발지를 켜 보세요">
+    <div>
+      <span class="grp">지도 보기</span>
+      <h2><span class="no">3</span>보안등·CCTV·사고다발지를 켜 보세요</h2>
+      <p><span class="n">1</span> [표시할 레이어]의 체크박스를 켜면 해당 표시가 지도에 나와요. 처음에는 지도가 복잡하지 않게 꺼져 있어요.</p>
+      <ul>
+        <li>각 줄 오른쪽 숫자(예: <b>1,427곳</b>)는 지도에 있는 개수예요.</li>
+        <li><b>CCTV (그 외, 점수 제외)</b>는 교통단속 등 점수에 쓰이지 않는 용도의 CCTV예요.</li>
+        <li>다음 세 단계에서 <b>보안등, CCTV, 사고다발지</b>를 실제 지도로 하나씩 보여 드려요.</li>
+      </ul>
+    </div>
+    <figure class="zoom">
+      <img src="help/x3-layers.jpg" width="676" height="355" loading="lazy" alt="표시할 레이어 체크박스 목록">
+      <figcaption>① [표시할 레이어]의 체크박스</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="보안등: 노란 빛이 퍼진 둥근 점">
+    <div>
+      <span class="grp">지도 보기</span>
+      <h2><span class="no">4</span><span class="k light"></span>보안등: 노란 빛이 퍼진 둥근 점</h2>
+      <p>그림처럼 <b>노란 빛이 퍼진 둥근 점</b>이 보안등이에요.</p>
+      <ul>
+        <li>그 도로 <b>40m 안</b>의 보안등이 점수에 쓰여요.</li>
+        <li>보안등이 많을수록 점수가 낮아져요(주의가 덜 필요해요).</li>
+        <li>지도를 확대해야 점이 잘 보여요.</li>
+      </ul>
+    </div>
+    <figure>
+      <img src="help/x3-light.jpg" width="1040" height="680" loading="lazy" alt="확대한 지도에서 보안등 표시 예시">
+      <figcaption>보안등: 노란 빛이 퍼진 둥근 점 (빨간 원 안)</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="CCTV: 카메라 모양">
+    <div>
+      <span class="grp">지도 보기</span>
+      <h2><span class="no">5</span><span class="k cctv"></span>CCTV: 카메라 모양</h2>
+      <p>그림처럼 <b>카메라 모양</b>이 CCTV예요.</p>
+      <ul>
+        <li>그 도로 <b>100m 안</b>의 방범·어린이보호용 CCTV가 점수에 쓰여요.</li>
+        <li>교통단속 등 다른 용도는 <b>회색 카메라</b>로 따로 보여 주고 점수에는 쓰지 않아요.</li>
+        <li>CCTV가 많을수록 점수가 낮아져요.</li>
+      </ul>
+    </div>
+    <figure>
+      <img src="help/x3-cctv.jpg" width="1040" height="680" loading="lazy" alt="확대한 지도에서 CCTV 표시 예시">
+      <figcaption>CCTV: 카메라 모양 (빨간 원 안)</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="!사고다발지: 분홍색 느낌표">
+    <div>
+      <span class="grp">지도 보기</span>
+      <h2><span class="no">6</span><span class="k acc">!</span>사고다발지: 분홍색 느낌표</h2>
+      <p>그림처럼 <b>분홍색 느낌표</b>가 교통사고가 잦은 곳이에요.</p>
+      <ul>
+        <li>사고다발지와 <b>가까울수록</b> 그 도로의 점수가 올라가요. 100m 안이면 가장 크게 반영하고, 250m 넘게 떨어지면 반영하지 않아요.</li>
+        <li>느낌표를 누르면 사고 정보(유형, 건수, 사상자)가 나와요.</li>
+      </ul>
+    </div>
+    <figure>
+      <img src="help/x3-acc.jpg" width="1040" height="680" loading="lazy" alt="확대한 지도에서 사고다발지 표시 예시">
+      <figcaption>사고다발지: 분홍색 느낌표 (빨간 원 안)</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="안전한 길 찾기를 시작해요">
+    <div>
+      <span class="grp">안전한 길 찾기</span>
+      <h2><span class="no">7</span>안전한 길 찾기를 시작해요</h2>
+      <p><span class="n">1</span> [안전한 길 찾기 시작]을 누르면 출발지와 도착지를 정할 수 있어요.</p>
+      <p>최단 경로와, 보행 주의 점수가 더 낮은 <b>추천 경로</b>를 함께 계산해서 알려 줘요.</p>
+    </div>
+    <figure class="zoom">
+      <img src="help/x4-start.jpg" width="680" loading="lazy" alt="기본 패널의 [안전한 길 찾기 시작] 버튼을 확대한 그림">
+      <figcaption>패널 맨 위쪽에 있는 [안전한 길 찾기 시작] 버튼 (확대)</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="출발지와 도착지 정하기">
+    <div>
+      <span class="grp">안전한 길 찾기</span>
+      <h2><span class="no">8</span>출발지와 도착지 정하기</h2>
+      <ul>
+        <li><span class="n">1</span> 안내 문구가 시키는 대로, 지도에서 <b>출발지</b>를 누르고 이어서 <b>도착지</b>를 눌러요. 누른 곳은 <span class="n">2</span> 출발·도착 표시로 남아요.</li>
+        <li>도로 가까이(약 60m 이내)를 누르면 <b>가장 가까운 도로에 붙어요.</b> 건물 위를 눌러도 괜찮아요.</li>
+        <li>산길로만 이어진 곳이나 도로에서 먼 곳은 안내 문구가 나와요. 다른 곳을 눌러 주세요.</li>
+        <li>잘못 눌렀다면 [다시 고르기]를 눌러요.</li>
+      </ul>
+      <p class="tip">폰에서는 지도를 확대한 뒤 누르면 더 정확해요.</p>
+    </div>
+    <figure>
+      <picture><source media="(max-width: 900px)" srcset="help/m5.jpg"><img src="help/d5.jpg" width="1280" height="800" loading="lazy" alt="출발지를 누른 뒤 도착지를 누르라는 안내가 나온 화면"></picture>
+      <figcaption>출발지를 누르면 도착지를 누르라고 안내해요</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="결과는 이렇게 보여요">
+    <div>
+      <span class="grp">안전한 길 찾기</span>
+      <h2><span class="no">9</span>결과는 이렇게 보여요</h2>
+      <p>도착지까지 정하면 <b>간단한 결과</b>가 먼저 나와요.</p>
+      <ul>
+        <li><span class="n">1</span> 지도에는 추천 경로가 <b>초록 선과 화살표</b>로 나와요. 화살표 방향으로 가세요.</li>
+        <li><span class="n">2</span> 패널에는 걷는 시간·거리와 3줄 요약이 나와요.
+          <ul>
+            <li><b>이유</b> 최단 경로보다 점수가 얼마나 낮은지</li>
+            <li><b>거리</b> 얼마나 더 걷는지</li>
+            <li><b>주의</b> 추천 경로에서 점수가 가장 높은 구간</li>
+          </ul>
+        </li>
+        <li><span class="n">3</span> 더 자세히 보고 싶으면 [안전성 확인하기]를 눌러요.</li>
+      </ul>
+    </div>
+    <figure>
+      <picture><source media="(max-width: 900px)" srcset="help/m6.jpg"><img src="help/d6.jpg" width="1280" height="800" loading="lazy" alt="추천 경로가 초록 선과 화살표로 표시된 간단한 결과 화면"></picture>
+      <figcaption>간단한 결과: 초록 선을 따라가면 돼요</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="[안전성 확인하기]로 더 자세히">
+    <div>
+      <span class="grp">안전한 길 찾기</span>
+      <h2><span class="no">10</span>[안전성 확인하기]로 더 자세히</h2>
+      <ul>
+        <li><span class="n">1</span> 지도에서 두 경로를 비교해요. <b>초록 윤곽선 + 점수 색</b>은 추천 경로, <b>검은 점선</b>은 최단 경로예요.</li>
+        <li>경로 주변 보안등·CCTV의 테두리는 어느 경로 소속인지 알려 줘요.
+          <ul>
+            <li><span class="k rec"></span>초록 테두리 = 추천 경로 구간의 점</li>
+            <li><span class="k sh"></span>점선 테두리 = 최단 경로에만 해당하는 점</li>
+          </ul>
+        </li>
+        <li><span class="n">3</span> 체크박스로 보안등·CCTV 표시를 켜고 끌 수 있어요.</li>
+        <li><span class="n">4</span> 비교 표에서 거리, 걷는 시간, 평균 점수, 60점 이상 구간, 보안등·CCTV 수를 최단과 추천으로 비교해요.</li>
+        <li>[더 자세히 알아보기]를 누르면 AI가 추천 이유를 쉬운 말로 설명해 줘요.</li>
+        <li><span class="n">2</span> [← 뒤로 가기]를 누르면 간단한 결과로 돌아가요.</li>
+      </ul>
+      <p class="tip">폰에서는 <span class="n">3</span> <span class="n">4</span>가 화면 아래쪽에 있어요. 패널을 아래로 스크롤해 보세요.</p>
+    </div>
+    <figure>
+      <picture><source media="(max-width: 900px)" srcset="help/m7.jpg"><img src="help/d7.jpg" width="1280" height="800" loading="lazy" alt="안전성 확인 화면. 점수 색 경로, 점선, 점 테두리와 비교 표"></picture>
+      <figcaption>안전성 확인: 두 경로를 지도와 표로 비교해요</figcaption>
+    </figure>
+  </article>
+
+  <article class="step" data-title="꼭 알아 두세요">
+    <div>
+      <span class="grp">알아 두세요</span>
+      <h2><span class="no">11</span>꼭 알아 두세요</h2>
+      <ul>
+        <li>점수는 보안등·CCTV·사고다발지·도로 등급으로 만든 <b>환경 지표</b>예요. <b>안전을 보장하거나 범죄 발생을 예측하지 않아요.</b></li>
+        <li>횡단보도, 보도 유무, 시간대별 통행량은 반영되지 않았어요.</li>
+        <li>산길은 길 찾기에서 빠져요.</li>
+        <li><span class="n">1</span> 점수 계산식(가중치)과 데이터 출처, 한계는 기본 화면 패널 맨 아래에 있어요.</li>
+        <li>AI 설명은 이 지도의 계산 결과만 바탕으로 하며 틀릴 수 있어요.</li>
+      </ul>
+      <div class="done">
+        <a class="go" href="./">지도 보러 가기</a>
+        <label class="chk"><input type="checkbox" id="hide"> 다음부터 처음 실행할 때 자동으로 보지 않기</label>
+        <p class="note">지도 화면의 [사용법 보기]나 위쪽 [? 사용법]을 누르면 언제든 이 페이지로 올 수 있어요.</p>
+      </div>
+    </div>
+    <figure>
+      <picture><source media="(max-width: 900px)" srcset="help/m8.jpg"><img src="help/d8.jpg" width="1280" height="800" loading="lazy" alt="기본 패널 맨 아래의 데이터와 한계 설명"></picture>
+      <figcaption>패널 맨 아래: [데이터와 한계] · 그림 속 지도는 © Kakao</figcaption>
+    </figure>
+  </article>
+</main>
+
+<nav class="nav" aria-label="단계 이동">
+  <button type="button" class="nb" id="prev">← 이전</button>
+  <span class="hint">← → 키 또는 화면을 좌우로 밀어서 넘겨요</span>
+  <button type="button" class="nb p" id="next">다음 →</button>
+  <a class="nb p" id="go" href="./" hidden>지도 보러 가기</a>
+</nav>
+
+<script>
+  // 한 번에 한 단계씩 보여 준다. 이전/다음 버튼, 위쪽 단계 버튼, 키보드(← →), 좌우로 밀기, 주소(#1~#8)로 이동할 수 있다.
+  (function () {
+    const steps = [...document.querySelectorAll('.step')], tabs = [...document.querySelectorAll('#tabs button')];
+    const prev = document.getElementById('prev'), next = document.getElementById('next'), go = document.getElementById('go');
+    const count = document.getElementById('count'), bar = document.getElementById('bar');
+    let cur = 0;
+    function show(i, scroll) {
+      cur = Math.max(0, Math.min(steps.length - 1, i));
+      steps.forEach((s, k) => s.classList.toggle('on', k === cur));
+      tabs.forEach((t, k) => t.setAttribute('aria-current', k === cur ? 'step' : 'false'));
+      try { tabs[cur].scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) { /* 무시 */ } // 폰에서 가로로 스크롤되는 단계 버튼이 현재 단계를 따라가게
+      const last = cur === steps.length - 1;
+      prev.disabled = cur === 0; next.hidden = last; go.hidden = !last;
+      count.textContent = (cur + 1) + ' / ' + steps.length; bar.style.width = ((cur + 1) / steps.length * 100) + '%';
+      document.title = (cur + 1) + '. ' + steps[cur].dataset.title + ' · 사용법';
+      try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) { /* 무시 */ }
+      if (scroll !== false) window.scrollTo(0, 0);
+      const nx = steps[cur + 1]; if (nx) { const im = nx.querySelector('img'); if (im) { const pre = new Image(); pre.src = window.matchMedia('(max-width: 900px)').matches ? im.parentNode.querySelector('source').srcset : im.getAttribute('src'); } } // 다음 단계 그림을 미리 불러온다
+    }
+    prev.addEventListener('click', () => show(cur - 1));
+    next.addEventListener('click', () => show(cur + 1));
+    tabs.forEach((t, k) => t.addEventListener('click', () => show(k)));
+    document.addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if (e.key === 'ArrowRight') show(cur + 1); else if (e.key === 'ArrowLeft') show(cur - 1); });
+    let sx = null, sy = null; const main = document.getElementById('main');
+    main.addEventListener('touchstart', e => { if (e.touches.length === 1) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; } else sx = null; }, { passive: true });
+    main.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null; if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) show(cur + (dx < 0 ? 1 : -1)); }, { passive: true });
+    const m = location.hash.match(/^#s?(\d{1,2})$/); show(m ? +m[1] - 1 : 0, false); // 범위를 벗어나면 show()가 가까운 단계로 맞춘다
+    // "다음부터 처음 실행할 때 자동으로 보지 않기": 지도(index.html)를 처음 열 때 이 페이지로 자동 이동하는 것을 이 브라우저에서 멈춘다. 기본은 체크 해제.
+    const KEY = 'knu-safety-map-help-hide', box = document.getElementById('hide');
+    try { box.checked = localStorage.getItem(KEY) === '1'; } catch (e) { /* 저장소를 못 읽으면 해제 상태로 둔다 */ }
+    box.addEventListener('change', function () { try { box.checked ? localStorage.setItem(KEY, '1') : localStorage.removeItem(KEY); } catch (e) { /* 저장이 막힌 브라우저 */ } });
+  })();
+
+</script>
+</body>
+</html>
